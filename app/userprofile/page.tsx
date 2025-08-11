@@ -122,13 +122,21 @@ export default function UserProfile() {
             </div>
           </div>
           
-          <button 
-            className="px-6 py-2 bg-yellow-400 text-slate-900 rounded-lg font-semibold hover:bg-yellow-300 transition-colors"
-            onClick={handlePlanNewTrip}
-          >
-            <Plus className="w-4 h-4 inline mr-2" />
-            Plan New Trip
-          </button>
+          <div className="flex gap-3">
+            <button 
+              className="px-6 py-2 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-600 transition-colors"
+              onClick={() => window.location.href = '/my-trips'}
+            >
+              View All Trips
+            </button>
+            <button 
+              className="px-6 py-2 bg-yellow-400 text-slate-900 rounded-lg font-semibold hover:bg-yellow-300 transition-colors"
+              onClick={handlePlanNewTrip}
+            >
+              <Plus className="w-4 h-4 inline mr-2" />
+              Plan New Trip
+            </button>
+          </div>
         </div>
       </header>
 
