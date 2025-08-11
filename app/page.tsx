@@ -130,7 +130,15 @@ export default function Home() {
                 </motion.a>
               ))}
               <motion.a
-                href="/userprofile"
+                href="/login"
+                whileHover={{ y: -3, color: "#14b8a6" }}
+                transition={{ duration: 0.3 }}
+                className="text-gray-300 font-medium tracking-wide px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                Login
+              </motion.a>
+              <motion.a
+                href="/register"
                 whileHover={sophisticatedHover}
                 whileTap={{ scale: 0.98 }}
                 className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-6 py-3 rounded-full font-semibold shadow-lg"
@@ -272,7 +280,7 @@ export default function Home() {
         </div>
       </motion.div>
 
-      {/* Premium Search Experience */}
+      {/* Premium Search Experience
       <motion.div
         initial={{ y: 150, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -369,7 +377,7 @@ export default function Home() {
             ))}
           </motion.div>
         </motion.div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Exclusive Destinations */}
       <motion.section
