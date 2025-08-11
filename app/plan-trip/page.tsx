@@ -3,9 +3,9 @@
 // ============================================================================
 // IMPORTS - External dependencies and Next.js utilities
 // ============================================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Calendar, MapPin, Users, DollarSign, Plane, Clock, Star, Check } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Next.js navigation hook
+import { useRouter, useSearchParams } from 'next/navigation'; // Next.js navigation hook
 
 // ============================================================================
 // TYPE DEFINITIONS - Interface definitions for type safety
@@ -40,6 +40,7 @@ export default function PlanTrip() {
   // ============================================================================
   
   const router = useRouter();                    // Next.js router for navigation
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState(1); // Current wizard step (1-4)
   
   // Main trip data state - accumulates user selections across steps
@@ -52,6 +53,14 @@ export default function PlanTrip() {
     travelStyle: '',
     interests: []          // Empty array for multi-select interests
   });
+
+  // Handle URL parameters for pre-filled destination
+  useEffect(() => {
+    const destination = searchParams.get('destination');
+    if (destination) {
+      setTripData(prev => ({ ...prev, destination: decodeURIComponent(destination) }));
+    }
+  }, [searchParams]);
 
   // ============================================================================
   // STATIC DATA - Configuration data for form options
@@ -131,8 +140,17 @@ export default function PlanTrip() {
 
   // Submits completed trip data and navigates to profile
   const handleSubmit = () => {
-    console.log('Trip data:', tripData);
-    // TODO: Send trip data to API endpoint
+    // Save trip data to localStorage for demo purposes
+    const existingTrips = JSON.parse(localStorage.getItem('userTrips') || '[]');
+    const newTrip = {
+      id: Date.now(),
+      ...tripData,
+      status: 'planned',
+      createdAt: new Date().toISOString()
+    };
+    localStorage.setItem('userTrips', JSON.stringify([...existingTrips, newTrip]));
+    
+    console.log('Trip created:', newTrip);
     router.push('/userprofile');
   };
 

@@ -93,12 +93,15 @@ export default function CityCard({ city }: CityCardProps) {
         </div>
 
         <div className="flex gap-2">
-          <button className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors">
+          <button 
+            className="flex-1 px-4 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
+            onClick={() => router.push(`/city-details/${city.name.toLowerCase().replace(/\s+/g, '-')}`)}
+          >
             Explore
           </button>
           <button 
             className="flex-1 px-4 py-2 bg-yellow-400 text-slate-900 rounded-lg font-medium hover:bg-yellow-300 transition-colors"
-            onClick={() => router.push(`/plan-trip?destination=${city.name}`)}
+            onClick={() => router.push(`/plan-trip?destination=${encodeURIComponent(city.name)}`)}
           >
             <Plane className="w-4 h-4 inline mr-1" />
             Add
