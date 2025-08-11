@@ -7,17 +7,34 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-import { Sparkles, MapPin, Calendar, Users, Star, ArrowRight, Globe, Plane, Camera, Heart } from "lucide-react";
+import {
+  Sparkles,
+  MapPin,
+  Calendar,
+  Users,
+  Star,
+  ArrowRight,
+  Globe,
+  Plane,
+  Camera,
+  Heart,
+} from "lucide-react";
+import ValidationToast from "../components/ValidationToast";
+import { validateDestination, getDateValidation } from "../lib/validation";
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  const [searchData, setSearchData] = useState({ destination: '', date: '' });
-  const [email, setEmail] = useState('');
+  const [searchData, setSearchData] = useState({ destination: "", date: "" });
+  const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "error" as "error" | "success",
+  });
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -28,18 +45,63 @@ export default function Home() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchData.destination.trim()) {
-      window.location.href = `/city-search?q=${encodeURIComponent(searchData.destination)}`;
+
+    const destValidation = validateDestination(searchData.destination);
+    if (!destValidation.isValid) {
+      setToast({ show: true, message: destValidation.message!, type: "error" });
+      return;
     }
+
+    if (searchData.date) {
+      const selectedDate = new Date(searchData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        setToast({
+          show: true,
+          message: "Please select a future date for your trip",
+          type: "error",
+        });
+        return;
+      }
+    }
+
+    window.location.href = `/city-search?q=${encodeURIComponent(
+      searchData.destination
+    )}`;
   };
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim() && email.includes('@')) {
-      setIsSubscribed(true);
-      setEmail('');
-      setTimeout(() => setIsSubscribed(false), 3000);
+
+    if (!email.trim()) {
+      setToast({
+        show: true,
+        message: "Please enter your email address",
+        type: "error",
+      });
+      return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setToast({
+        show: true,
+        message: "Please enter a valid email address",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsSubscribed(true);
+    setEmail("");
+    setToast({
+      show: true,
+      message: "Successfully subscribed to our newsletter!",
+      type: "success",
+    });
+    setTimeout(() => setIsSubscribed(false), 3000);
   };
 
   const luxuryVariants = {
@@ -156,42 +218,6 @@ export default function Home() {
                 />
               </motion.a>
               <motion.a
-                href="/activity-search"
-                whileHover={{
-                  y: -3,
-                  color: "#14b8a6",
-                  textShadow: "0 0 8px rgba(20, 184, 166, 0.5)",
-                }}
-                transition={{ duration: 0.3 }}
-                className="text-gray-300 font-medium tracking-wide relative group"
-              >
-                Experiences
-                <motion.span
-                  className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-teal-400 to-yellow-400"
-                  initial={{ width: 0 }}
-                  whileHover={{ width: "100%" }}
-                  transition={{ duration: 0.4 }}
-                />
-              </motion.a>
-              <motion.a
-                href="#"
-                whileHover={{
-                  y: -3,
-                  color: "#14b8a6",
-                  textShadow: "0 0 8px rgba(20, 184, 166, 0.5)",
-                }}
-                transition={{ duration: 0.3 }}
-                className="text-gray-300 font-medium tracking-wide relative group"
-              >
-                Concierge
-                <motion.span
-                  className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-teal-400 to-yellow-400"
-                  initial={{ width: 0 }}
-                  whileHover={{ width: "100%" }}
-                  transition={{ duration: 0.4 }}
-                />
-              </motion.a>
-              <motion.a
                 href="/login"
                 whileHover={{ y: -3, color: "#14b8a6" }}
                 transition={{ duration: 0.3 }}
@@ -259,26 +285,6 @@ export default function Home() {
                   <motion.a
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                    whileHover={{ x: 10, color: "#14b8a6" }}
-                    href="/activity-search"
-                    className="block text-gray-300 font-medium py-2"
-                  >
-                    Experiences
-                  </motion.a>
-                  <motion.a
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                    whileHover={{ x: 10, color: "#14b8a6" }}
-                    href="#"
-                    className="block text-gray-300 font-medium py-2"
-                  >
-                    Concierge
-                  </motion.a>
-                  <motion.a
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 }}
                     whileHover={{ x: 10, color: "#14b8a6" }}
                     href="/login"
@@ -326,7 +332,7 @@ export default function Home() {
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           className="absolute inset-0 bg-gradient-to-r from-slate-900/60 via-slate-800/40 to-slate-900/60"
         />
-        
+
         {/* Floating Elements */}
         <motion.div
           animate={{ y: [-20, 20, -20], rotate: [0, 5, 0] }}
@@ -342,7 +348,7 @@ export default function Home() {
         >
           <Globe size={80} />
         </motion.div>
-        
+
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/80 to-transparent" />
 
@@ -365,7 +371,9 @@ export default function Home() {
               className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full mb-6 border border-white/20"
             >
               <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-medium">Premium Travel Experiences</span>
+              <span className="text-sm font-medium">
+                Premium Travel Experiences
+              </span>
             </motion.div>
 
             <motion.h2
@@ -385,17 +393,20 @@ export default function Home() {
                 Extraordinary
               </motion.span>
               <br />
-              <span className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl">Destinations</span>
+              <span className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+                Destinations
+              </span>
             </motion.h2>
-            
+
             <motion.p
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.3, duration: 0.8 }}
               className="text-xl md:text-2xl mb-10 text-gray-200 font-light leading-relaxed max-w-3xl"
             >
-              Embark on unforgettable journeys to the world's most breathtaking destinations. 
-              From pristine beaches to majestic mountains, your dream adventure awaits.
+              Embark on unforgettable journeys to the world&apos;s most
+              breathtaking destinations. From pristine beaches to majestic
+              mountains, your dream adventure awaits.
             </motion.p>
 
             {/* CTA Buttons */}
@@ -415,19 +426,17 @@ export default function Home() {
                 <span>Plan Your Journey</span>
                 <ArrowRight className="w-5 h-5" />
               </motion.a>
-              
+
               <motion.a
-                href="/city-search"
+                href="/userprofile"
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-8 py-4 rounded-full text-white font-semibold border border-white/20 hover:bg-white/20 transition-all"
               >
                 <MapPin className="w-5 h-5" />
-                <span>Explore Destinations</span>
+                <span>My Profile</span>
               </motion.a>
             </motion.div>
-
-
           </motion.div>
         </div>
       </motion.div>
@@ -539,29 +548,47 @@ export default function Home() {
         className="-mt-16 relative z-10 max-w-4xl mx-auto px-4 sm:px-6"
       >
         <motion.div
-          whileHover={{ y: -5, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
+          whileHover={{
+            y: -5,
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+          }}
           className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-6 border border-gray-200/50"
         >
-          <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form
+            onSubmit={handleSearch}
+            className="grid grid-cols-1 md:grid-cols-4 gap-4"
+          >
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Where to?</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Where to?
+              </label>
               <motion.input
                 whileFocus={{ scale: 1.02 }}
                 type="text"
                 value={searchData.destination}
-                onChange={(e) => setSearchData(prev => ({ ...prev, destination: e.target.value }))}
+                onChange={(e) =>
+                  setSearchData((prev) => ({
+                    ...prev,
+                    destination: e.target.value,
+                  }))
+                }
                 placeholder="Search destinations..."
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">When?</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                When?
+              </label>
               <motion.input
                 whileFocus={{ scale: 1.02 }}
                 type="date"
                 value={searchData.date}
-                onChange={(e) => setSearchData(prev => ({ ...prev, date: e.target.value }))}
-                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) =>
+                  setSearchData((prev) => ({ ...prev, date: e.target.value }))
+                }
+                min={getDateValidation().min}
+                max={getDateValidation().max}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
@@ -608,20 +635,20 @@ export default function Home() {
                 icon: <MapPin className="w-8 h-8" />,
                 title: "Curated Destinations",
                 desc: "Hand-picked locations by travel experts",
-                color: "from-blue-500 to-teal-500"
+                color: "from-blue-500 to-teal-500",
               },
               {
                 icon: <Users className="w-8 h-8" />,
                 title: "Expert Guides",
                 desc: "Local guides with deep cultural knowledge",
-                color: "from-purple-500 to-pink-500"
+                color: "from-purple-500 to-pink-500",
               },
               {
                 icon: <Heart className="w-8 h-8" />,
                 title: "Personalized Experience",
                 desc: "Tailored trips based on your preferences",
-                color: "from-orange-500 to-red-500"
-              }
+                color: "from-orange-500 to-red-500",
+              },
             ].map((feature, index) => (
               <motion.div
                 key={index}
@@ -638,7 +665,9 @@ export default function Home() {
                 >
                   {feature.icon}
                 </motion.div>
-                <h4 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h4>
+                <h4 className="text-xl font-semibold text-gray-900 mb-3">
+                  {feature.title}
+                </h4>
                 <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
               </motion.div>
             ))}
@@ -675,8 +704,9 @@ export default function Home() {
             </span>
           </h3>
           <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
-            Discover breathtaking locations handpicked by our travel experts. 
-            Each destination offers unique experiences and unforgettable memories.
+            Discover breathtaking locations handpicked by our travel experts.
+            Each destination offers unique experiences and unforgettable
+            memories.
           </p>
         </motion.div>
 
@@ -696,7 +726,8 @@ export default function Home() {
               gradient: "from-teal-400 via-blue-500 to-slate-600",
               rating: 4.9,
               duration: "7 Days",
-              image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
+              image:
+                "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
             },
             {
               title: "Swiss Mountain Escape",
@@ -706,7 +737,8 @@ export default function Home() {
               gradient: "from-yellow-400 via-orange-500 to-slate-700",
               rating: 4.8,
               duration: "10 Days",
-              image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
+              image:
+                "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
             },
             {
               title: "African Safari Adventure",
@@ -716,7 +748,8 @@ export default function Home() {
               gradient: "from-slate-600 via-amber-500 to-teal-500",
               rating: 4.9,
               duration: "12 Days",
-              image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop"
+              image:
+                "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop",
             },
           ].map((destination, index) => (
             <motion.div
@@ -736,13 +769,15 @@ export default function Home() {
                   fill
                   className="object-cover"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-br ${destination.gradient} opacity-80`} />
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${destination.gradient} opacity-80`}
+                />
                 <motion.div
                   className="absolute inset-0 bg-black/20"
                   whileHover={{ backgroundColor: "rgba(0,0,0,0.1)" }}
                   transition={{ duration: 0.4 }}
                 />
-                
+
                 {/* Floating Elements */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0 }}
@@ -752,7 +787,7 @@ export default function Home() {
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
                   <span>{destination.rating}</span>
                 </motion.div>
-                
+
                 <motion.div
                   initial={{ opacity: 0 }}
                   whileHover={{ opacity: 1 }}
@@ -760,15 +795,19 @@ export default function Home() {
                 >
                   {destination.duration}
                 </motion.div>
-                
+
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileHover={{ opacity: 1, y: 0 }}
                   className="absolute bottom-4 left-4 right-4"
                 >
                   <div className="bg-white/10 backdrop-blur-md rounded-lg p-3">
-                    <h4 className="text-white font-semibold text-lg mb-1">{destination.title}</h4>
-                    <p className="text-white/80 text-sm">{destination.duration} • {destination.rating} ★</p>
+                    <h4 className="text-white font-semibold text-lg mb-1">
+                      {destination.title}
+                    </h4>
+                    <p className="text-white/80 text-sm">
+                      {destination.duration} • {destination.rating} ★
+                    </p>
                   </div>
                 </motion.div>
               </motion.div>
@@ -788,11 +827,17 @@ export default function Home() {
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`w-4 h-4 ${i < Math.floor(destination.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                            className={`w-4 h-4 ${
+                              i < Math.floor(destination.rating)
+                                ? "text-yellow-400 fill-current"
+                                : "text-gray-300"
+                            }`}
                           />
                         ))}
                       </div>
-                      <span className="text-sm text-gray-600">({destination.rating})</span>
+                      <span className="text-sm text-gray-600">
+                        ({destination.rating})
+                      </span>
                     </div>
                   </div>
                   <motion.div
@@ -802,11 +847,11 @@ export default function Home() {
                     <MapPin className="w-5 h-5 text-teal-600" />
                   </motion.div>
                 </div>
-                
+
                 <p className="text-gray-600 mb-6 leading-relaxed">
                   {destination.desc}
                 </p>
-                
+
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   className="flex items-baseline space-x-2 mb-4"
@@ -819,7 +864,7 @@ export default function Home() {
                     ₹{destination.original}
                   </span>
                 </motion.div>
-                
+
                 <motion.div
                   animate={{ opacity: [0.7, 1, 0.7] }}
                   transition={{ duration: 3, repeat: Infinity }}
@@ -870,62 +915,73 @@ export default function Home() {
                 location: "New York, USA",
                 text: "GlobeTrotter made our honeymoon absolutely magical. Every detail was perfect, from the luxury accommodations to the personalized experiences.",
                 rating: 5,
-                image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face"
+                image: "https://randomuser.me/api/portraits/women/44.jpg",
               },
               {
                 name: "Raj Patel",
                 location: "Mumbai, India",
                 text: "The Swiss Alps trip exceeded all expectations. Professional guides, stunning locations, and memories that will last a lifetime.",
                 rating: 5,
-                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face"
+                image:
+                  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
               },
               {
                 name: "Emma Wilson",
                 location: "London, UK",
                 text: "From booking to return, everything was seamless. The attention to detail and customer service is unmatched in the travel industry.",
                 rating: 5,
-                image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face"
-              }
-            ].map((testimonial, index) => (
-              currentTestimonial === index && (
-                <motion.div
-                  key={index}
-                  className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 border border-gray-100"
-                >
-                  <div className="flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      className="flex-shrink-0"
-                    >
-                      <Image
-                        src={testimonial.image}
-                        alt={testimonial.name}
-                        width={100}
-                        height={100}
-                        className="rounded-full border-4 border-teal-200"
-                      />
-                    </motion.div>
-                    
-                    <div className="flex-1 text-center md:text-left">
-                      <div className="flex justify-center md:justify-start items-center space-x-1 mb-4">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                        ))}
-                      </div>
-                      
-                      <blockquote className="text-xl md:text-2xl text-gray-700 font-light leading-relaxed mb-6 italic">
-                        "{testimonial.text}"
-                      </blockquote>
-                      
-                      <div>
-                        <div className="font-semibold text-gray-900 text-lg">{testimonial.name}</div>
-                        <div className="text-gray-600">{testimonial.location}</div>
+                image:
+                  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
+              },
+            ].map(
+              (testimonial, index) =>
+                currentTestimonial === index && (
+                  <motion.div
+                    key={index}
+                    className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 border border-gray-100"
+                  >
+                    <div className="flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        className="flex-shrink-0"
+                      >
+                        <Image
+                          src={testimonial.image}
+                          alt={testimonial.name}
+                          width={100}
+                          height={100}
+                          className="rounded-full border-4 border-teal-200"
+                          unoptimized={true}
+                        />
+                      </motion.div>
+
+                      <div className="flex-1 text-center md:text-left">
+                        <div className="flex justify-center md:justify-start items-center space-x-1 mb-4">
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className="w-5 h-5 text-yellow-400 fill-current"
+                            />
+                          ))}
+                        </div>
+
+                        <blockquote className="text-xl md:text-2xl text-gray-700 font-light leading-relaxed mb-6 italic">
+                          &quot;{testimonial.text}&quot;
+                        </blockquote>
+
+                        <div>
+                          <div className="font-semibold text-gray-900 text-lg">
+                            {testimonial.name}
+                          </div>
+                          <div className="text-gray-600">
+                            {testimonial.location}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              )
-            ))}
+                  </motion.div>
+                )
+            )}
           </motion.div>
 
           {/* Testimonial Indicators */}
@@ -937,7 +993,9 @@ export default function Home() {
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
                 className={`w-3 h-3 rounded-full transition-all ${
-                  currentTestimonial === index ? 'bg-teal-500 shadow-lg' : 'bg-gray-300 hover:bg-gray-400'
+                  currentTestimonial === index
+                    ? "bg-teal-500 shadow-lg"
+                    : "bg-gray-300 hover:bg-gray-400"
                 }`}
                 aria-label={`View testimonial ${index + 1}`}
               />
@@ -1124,9 +1182,10 @@ export default function Home() {
           >
             <h3 className="text-4xl font-bold mb-4">Stay Updated</h3>
             <p className="text-xl text-teal-100 mb-8">
-              Get exclusive travel deals and destination insights delivered to your inbox
+              Get exclusive travel deals and destination insights delivered to
+              your inbox
             </p>
-            
+
             <motion.form
               onSubmit={handleSubscribe}
               initial={{ scale: 0.9, opacity: 0 }}
@@ -1142,7 +1201,7 @@ export default function Home() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="flex-1 px-6 py-3 rounded-full text-gray-900 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all"
+                className="flex-1 px-6 py-3 rounded-full text-gray-900 bg-white/90 focus:outline-none focus:ring-4 focus:ring-teal-200 transition-all border border-teal-300"
               />
               <motion.button
                 type="submit"
@@ -1151,10 +1210,10 @@ export default function Home() {
                 disabled={isSubscribed}
                 className="bg-white text-teal-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
               >
-                {isSubscribed ? '✓ Subscribed!' : 'Subscribe'}
+                {isSubscribed ? "✓ Subscribed!" : "Subscribe"}
               </motion.button>
             </motion.form>
-            
+
             {isSubscribed && (
               <motion.p
                 initial={{ opacity: 0, y: 10 }}
@@ -1202,6 +1261,13 @@ export default function Home() {
           <span className="sm:hidden">Plan</span>
         </motion.a>
       </motion.div>
+
+      <ValidationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+      />
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, Globe, User, Phone, MapPin, FileText } from "lucide-react";
+import ValidationToast from "../../components/ValidationToast";
+import { validateEmail, validatePassword, validateName } from "../../lib/validation";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +13,7 @@ const RegisterPage = () => {
     firstName: "", lastName: "", email: "", phone: "", city: "", country: "",
     additionalInfo: "", password: "", confirmPassword: ""
   });
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 'error' | 'success' });
 
   const handleInputChange = (e:any) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -18,6 +21,57 @@ const RegisterPage = () => {
 
   const handleSubmit = (e:any) => {
     e.preventDefault();
+    
+    const firstNameValidation = validateName(formData.firstName);
+    if (!firstNameValidation.isValid) {
+      setToast({ show: true, message: `First name: ${firstNameValidation.message}`, type: 'error' });
+      return;
+    }
+    
+    const lastNameValidation = validateName(formData.lastName);
+    if (!lastNameValidation.isValid) {
+      setToast({ show: true, message: `Last name: ${lastNameValidation.message}`, type: 'error' });
+      return;
+    }
+    
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      setToast({ show: true, message: emailValidation.message!, type: 'error' });
+      return;
+    }
+    
+    if (!formData.phone.trim()) {
+      setToast({ show: true, message: 'Phone number is required', type: 'error' });
+      return;
+    }
+    
+    if (!/^[\d\s\+\-\(\)]+$/.test(formData.phone)) {
+      setToast({ show: true, message: 'Please enter a valid phone number', type: 'error' });
+      return;
+    }
+    
+    if (!formData.city.trim()) {
+      setToast({ show: true, message: 'City is required', type: 'error' });
+      return;
+    }
+    
+    if (!formData.country.trim()) {
+      setToast({ show: true, message: 'Country is required', type: 'error' });
+      return;
+    }
+    
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      setToast({ show: true, message: passwordValidation.message!, type: 'error' });
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setToast({ show: true, message: 'Passwords do not match', type: 'error' });
+      return;
+    }
+    
+    setToast({ show: true, message: 'Account created successfully!', type: 'success' });
     console.log("Register attempt:", formData);
   };
 
@@ -477,6 +531,13 @@ const RegisterPage = () => {
           </form>
         </motion.div>
       </motion.div>
+      
+      <ValidationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
       </div>
     </>
   );

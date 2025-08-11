@@ -5,7 +5,9 @@
 // ============================================================================
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Calendar, MapPin, Users, DollarSign, Plane, Clock, Star, Check } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation'; // Next.js navigation hook
+import { useRouter, useSearchParams } from 'next/navigation';
+import ValidationToast from '../../components/ValidationToast';
+import { validateDestination, validateTripDuration, validateTravelers, getDateValidation } from '../../lib/validation';
 
 // ============================================================================
 // TYPE DEFINITIONS - Interface definitions for type safety
@@ -53,6 +55,8 @@ export default function PlanTrip() {
     travelStyle: '',
     interests: []          // Empty array for multi-select interests
   });
+  
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 'error' | 'success' });
 
   // Handle URL parameters for pre-filled destination
   useEffect(() => {
@@ -108,6 +112,16 @@ export default function PlanTrip() {
   
   // Advances to next step in wizard (max 3 steps)
   const handleNext = () => {
+    if (!isStepValid()) return;
+    
+    if (currentStep === 2) {
+      const durationValidation = validateTripDuration(tripData.startDate, tripData.endDate);
+      if (!durationValidation.isValid) {
+        setToast({ show: true, message: durationValidation.message!, type: 'error' });
+        return;
+      }
+    }
+    
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
@@ -263,6 +277,8 @@ export default function PlanTrip() {
                   type="date"
                   value={tripData.startDate}
                   onChange={(e) => setTripData({ ...tripData, startDate: e.target.value })}
+                  min={getDateValidation().min}
+                  max={getDateValidation().max}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-transparent"
                 />
               </div>
@@ -277,6 +293,11 @@ export default function PlanTrip() {
                   type="date"
                   value={tripData.endDate}
                   onChange={(e) => setTripData({ ...tripData, endDate: e.target.value })}
+                  min={tripData.startDate || getDateValidation().min}
+                  max={tripData.startDate ? 
+                    new Date(new Date(tripData.startDate).getTime() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
+                    getDateValidation().max
+                  }
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-transparent"
                 />
               </div>
@@ -304,7 +325,13 @@ export default function PlanTrip() {
                 {/* Increment button */}
                 <button
                   type="button"
-                  onClick={() => setTripData({ ...tripData, travelers: tripData.travelers + 1 })}
+                  onClick={() => {
+                    if (tripData.travelers >= 20) {
+                      setToast({ show: true, message: 'Maximum 20 travelers allowed per booking', type: 'error' });
+                      return;
+                    }
+                    setTripData({ ...tripData, travelers: tripData.travelers + 1 });
+                  }}
                   className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
                 >
                   +
@@ -479,6 +506,13 @@ export default function PlanTrip() {
           </div>
         </div>
       </div>
+      
+      <ValidationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 }

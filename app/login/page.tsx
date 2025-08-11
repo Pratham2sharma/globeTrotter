@@ -2,10 +2,13 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, Globe } from "lucide-react";
+import ValidationToast from "../../components/ValidationToast";
+import { validateEmail, validatePassword } from "../../lib/validation";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 'error' | 'success' });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -13,6 +16,19 @@ const LoginPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const emailValidation = validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      setToast({ show: true, message: emailValidation.message!, type: 'error' });
+      return;
+    }
+    
+    if (!formData.password.trim()) {
+      setToast({ show: true, message: 'Password is required', type: 'error' });
+      return;
+    }
+    
+    setToast({ show: true, message: 'Login successful!', type: 'success' });
     console.log("Login attempt:", formData);
   };
 
@@ -386,6 +402,13 @@ const LoginPage = () => {
           </form>
         </motion.div>
       </motion.div>
+      
+      <ValidationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
       </div>
     </>
   );
