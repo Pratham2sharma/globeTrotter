@@ -272,7 +272,7 @@ export default function Home() {
         </div>
       </motion.div>
 
-      {/* Premium Search Experience */}
+      {/* Premium Search Experience
       <motion.div
         initial={{ y: 150, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -369,7 +369,7 @@ export default function Home() {
             ))}
           </motion.div>
         </motion.div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Exclusive Destinations */}
       <motion.section
