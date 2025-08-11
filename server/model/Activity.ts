@@ -10,6 +10,7 @@ export interface IActivity extends Document {
   duration: string;
   rating: number;
   imageUrl?: string;
+  imageFile?: string; // Path to uploaded image file
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -58,6 +59,10 @@ const activitySchema = new Schema<IActivity>(
       max: 5,
     },
     imageUrl: {
+      type: String,
+      trim: true,
+    },
+    imageFile: {
       type: String,
       trim: true,
     },

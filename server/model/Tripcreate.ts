@@ -13,6 +13,7 @@ export interface ITrip extends Document {
   activities: string[];
   status: 'planning' | 'booked' | 'completed' | 'cancelled';
   coverPhoto?: string;
+  coverImageFile?: string; // Path to uploaded image file
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,6 +71,10 @@ const tripSchema: Schema<ITrip> = new Schema(
     coverPhoto: {
       type: String,
       default: null,
+    },
+    coverImageFile: {
+      type: String,
+      trim: true,
     },
   },
   { timestamps: true }

@@ -6,6 +6,7 @@ export interface ICity extends Document {
   state?: string;
   description?: string;
   imageUrl?: string;
+  imageFile?: string; // Path to uploaded image file
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +33,10 @@ const citySchema = new Schema<ICity>(
       trim: true,
     },
     imageUrl: {
+      type: String,
+      trim: true,
+    },
+    imageFile: {
       type: String,
       trim: true,
     },
