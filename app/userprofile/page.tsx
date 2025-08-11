@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Calendar, MapPin, Users, Plus, Globe, Star, Clock, ArrowRight, Plane, Camera, Coffee } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, Globe, Star, Clock, ArrowRight, Plane, Camera, Coffee, User, Settings, Edit3, X, Heart, Award, Languages } from 'lucide-react';
 
 // Type definitions
 interface Trip {
@@ -38,8 +38,94 @@ interface TravelStats {
 
 type TabType = 'upcoming' | 'past' | 'shared';
 
+interface UserProfile {
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  joinDate: string;
+  avatar: string;
+  bio: string;
+  age: number;
+  travelPreference: string;
+  languages: string[];
+}
+
 export default function UserProfile() {
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+  const [showProfile, setShowProfile] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    name: 'John Doe',
+    email: 'john.doe@email.com',
+    phone: '+91 98765 43210',
+    location: 'Mumbai, India',
+    joinDate: 'January 2023',
+    avatar: 'JD',
+    bio: 'Passionate traveler exploring the world one destination at a time.',
+    age: 28,
+    travelPreference: 'Adventure & Culture',
+    languages: ['English', 'Hindi', 'Spanish']
+  });
+
+  const prePlannedTrips = [
+    {
+      id: 1,
+      destination: 'Switzerland Alps',
+      image: '🏔️',
+      duration: '7 days',
+      budget: '₹4,50,000',
+      status: 'Planning'
+    },
+    {
+      id: 2,
+      destination: 'Maldives',
+      image: '🏖️',
+      duration: '5 days',
+      budget: '₹3,20,000',
+      status: 'Booked'
+    },
+    {
+      id: 3,
+      destination: 'Dubai',
+      image: '🏙️',
+      duration: '4 days',
+      budget: '₹2,80,000',
+      status: 'Planning'
+    }
+  ];
+
+  const previousTrips = [
+    {
+      id: 1,
+      destination: 'Paris',
+      image: '🇫🇷',
+      duration: '6 days',
+      budget: '₹3,80,000',
+      rating: 5,
+      year: '2024'
+    },
+    {
+      id: 2,
+      destination: 'Bali',
+      image: '🇮🇩',
+      duration: '8 days',
+      budget: '₹2,50,000',
+      rating: 4,
+      year: '2023'
+    },
+    {
+      id: 3,
+      destination: 'Tokyo',
+      image: '🇯🇵',
+      duration: '7 days',
+      budget: '₹4,20,000',
+      rating: 5,
+      year: '2023'
+    }
+  ];
+  const [editProfile, setEditProfile] = useState<UserProfile>(userProfile);
+  const [activeProfileTab, setActiveProfileTab] = useState<'info' | 'preplanned' | 'previous'>('info');
 
   const upcomingTrips: Trip[] = [
     {
@@ -147,7 +233,7 @@ export default function UserProfile() {
   };
 
   const handlePlanNewTrip = (): void => {
-    console.log('Navigate to new trip planning');
+    window.location.href = '/plan-trip';
   };
 
   const handleTripClick = (tripId: number): void => {
@@ -167,6 +253,16 @@ export default function UserProfile() {
       default:
         return upcomingTrips;
     }
+  };
+
+  const handleProfileSave = () => {
+    setUserProfile(editProfile);
+    setIsEditing(false);
+  };
+
+  const handleProfileCancel = () => {
+    setEditProfile(userProfile);
+    setIsEditing(false);
   };
 
   return (
@@ -194,8 +290,11 @@ export default function UserProfile() {
               <span className="hidden sm:inline">Plan New Trip</span>
               <span className="sm:hidden">Plan</span>
             </button>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center cursor-pointer">
-              <span className="text-white font-semibold text-sm sm:text-base">JD</span>
+            <div 
+              className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center cursor-pointer hover:shadow-lg transition-all"
+              onClick={() => setShowProfile(true)}
+            >
+              <span className="text-white font-semibold text-sm sm:text-base">{userProfile.avatar}</span>
             </div>
           </div>
         </div>
@@ -205,7 +304,7 @@ export default function UserProfile() {
         {/* Welcome Section */}
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-900">
-            Welcome back, John! ✈️
+            Welcome back, {userProfile.name.split(' ')[0]}! ✈️
           </h2>
           <p className="text-base sm:text-lg text-gray-600">
             Ready to plan your next extraordinary journey?
@@ -442,6 +541,14 @@ export default function UserProfile() {
               </h4>
               <div className="space-y-2">
                 <button 
+                  onClick={handlePlanNewTrip}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-3"
+                  type="button"
+                >
+                  <Plus className="w-4 h-4 text-teal-400" />
+                  <span className="text-sm text-gray-600">Plan New Trip</span>
+                </button>
+                <button 
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-3"
                   type="button"
                 >
@@ -462,11 +569,186 @@ export default function UserProfile() {
                   <Users className="w-4 h-4 text-teal-400" />
                   <span className="text-sm text-gray-600">Invite Friends</span>
                 </button>
+                <button 
+                  onClick={() => setShowProfile(true)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-3"
+                  type="button"
+                >
+                  <Settings className="w-4 h-4 text-teal-400" />
+                  <span className="text-sm text-gray-600">Profile Settings</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Enhanced Profile Modal */}
+      {showProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-slate-900">Profile</h3>
+                <button 
+                  onClick={() => setShowProfile(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Profile Header */}
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white font-bold text-2xl">{userProfile.avatar}</span>
+                </div>
+                <h4 className="text-lg font-bold text-slate-900">{userProfile.name}</h4>
+                <p className="text-gray-600">{userProfile.email}</p>
+                <p className="text-sm text-gray-500 mt-2">{userProfile.bio}</p>
+              </div>
+
+              {/* Tab Navigation */}
+              <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setActiveProfileTab('info')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    activeProfileTab === 'info' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-600'
+                  }`}
+                >
+                  Info
+                </button>
+                <button
+                  onClick={() => setActiveProfileTab('preplanned')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    activeProfileTab === 'preplanned' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-600'
+                  }`}
+                >
+                  Pre-planned
+                </button>
+                <button
+                  onClick={() => setActiveProfileTab('previous')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    activeProfileTab === 'previous' ? 'bg-white text-slate-900 shadow-sm' : 'text-gray-600'
+                  }`}
+                >
+                  Previous
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {activeProfileTab === 'info' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3">
+                      <User className="w-5 h-5 text-teal-400" />
+                      <div>
+                        <p className="text-sm text-gray-600">Age</p>
+                        <p className="font-medium">{userProfile.age} years</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <MapPin className="w-5 h-5 text-teal-400" />
+                      <div>
+                        <p className="text-sm text-gray-600">Location</p>
+                        <p className="font-medium">{userProfile.location}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <Heart className="w-5 h-5 text-teal-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">Travel Preference</p>
+                      <p className="font-medium">{userProfile.travelPreference}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <Languages className="w-5 h-5 text-teal-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">Languages</p>
+                      <p className="font-medium">{userProfile.languages.join(', ')}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="w-5 h-5 text-teal-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">Member Since</p>
+                      <p className="font-medium">{userProfile.joinDate}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeProfileTab === 'preplanned' && (
+                <div className="space-y-3">
+                  {prePlannedTrips.map((trip) => (
+                    <div key={trip.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">{trip.image}</span>
+                          <div>
+                            <h5 className="font-semibold text-slate-900">{trip.destination}</h5>
+                            <p className="text-sm text-gray-600">{trip.duration} • {trip.budget}</p>
+                          </div>
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          trip.status === 'Booked' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {trip.status}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeProfileTab === 'previous' && (
+                <div className="space-y-3">
+                  {previousTrips.map((trip) => (
+                    <div key={trip.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">{trip.image}</span>
+                          <div>
+                            <h5 className="font-semibold text-slate-900">{trip.destination}</h5>
+                            <p className="text-sm text-gray-600">{trip.duration} • {trip.budget} • {trip.year}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          {[...Array(trip.rating)].map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-current text-yellow-400" />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-6 pt-6 border-t">
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex-1 flex items-center justify-center space-x-2 p-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                    <span>Edit Profile</span>
+                  </button>
+                  <button
+                    onClick={() => setShowProfile(false)}
+                    className="flex-1 p-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
