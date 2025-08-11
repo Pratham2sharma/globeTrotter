@@ -1,19 +1,20 @@
 "use client"
 
-import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, ArrowLeft, Mail, Phone, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Edit, Trash2, ArrowLeft, Mail, Phone, MapPin, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Modal from '../components/Modal';
 
 interface User {
-  id: number;
-  name: string;
+  _id: string;
+  fname: string;
+  lname: string;
   email: string;
   phone: string;
-  location: string;
-  trips: number;
-  status: 'Active' | 'Inactive';
-  joinDate: string;
+  city: string;
+  country: string;
+  role: string;
+  createdAt: string;
 }
 
 export default function AdminUsers() {
@@ -23,23 +24,52 @@ export default function AdminUsers() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: 'John Doe', email: 'john@email.com', phone: '+91 98765 43210', location: 'Mumbai, India', trips: 5, status: 'Active', joinDate: '2023-01-15' },
-    { id: 2, name: 'Jane Smith', email: 'jane@email.com', phone: '+91 87654 32109', location: 'Delhi, India', trips: 3, status: 'Active', joinDate: '2023-02-20' },
-    { id: 3, name: 'Mike Johnson', email: 'mike@email.com', phone: '+91 76543 21098', location: 'Bangalore, India', trips: 8, status: 'Inactive', joinDate: '2023-03-10' }
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/users', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users);
+      } else {
+        setError('Failed to fetch users');
+      }
+    } catch (err) {
+      setError('Error loading users');
+    } finally {
+      setLoading(false);
+    }
+  };
   const [formData, setFormData] = useState<{
     name: string;
     email: string;
     phone: string;
     location: string;
     status: 'Active' | 'Inactive';
-  }>({ name: '', email: '', phone: '', location: '', status: 'Active' });
+  }>({ 
+    name: '', 
+    email: '', 
+    phone: '', 
+    location: '', 
+    status: 'Active' 
+  });
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const fullName = `${user.fname} ${user.lname}`;
+    const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || user.status === statusFilter;
+    const matchesStatus = statusFilter === 'All' || user.role === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -50,34 +80,68 @@ export default function AdminUsers() {
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
-    setFormData({ name: user.name, email: user.email, phone: user.phone, location: user.location, status: user.status });
+    setFormData({ 
+      name: `${user.fname} ${user.lname}`, 
+      email: user.email, 
+      phone: user.phone || '', 
+      location: user.city && user.country ? `${user.city}, ${user.country}` : '', 
+      status: 'Active' 
+    });
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (userId: number) => {
+  const handleDelete = async (userId: string) => {
     if (confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(user => user.id !== userId));
+      try {
+        const response = await fetch('/api/admin/users', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId })
+        });
+        
+        if (response.ok) {
+          await fetchUsers();
+        }
+      } catch (error) {
+        console.error('Error deleting user:', error);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (editingUser) {
-      setUsers(users.map(user => 
-        user.id === editingUser.id 
-          ? { ...user, ...formData }
-          : user
-      ));
-      setIsEditModalOpen(false);
-      setEditingUser(null);
+      try {
+        const [fname, ...lnameArr] = formData.name.split(' ');
+        const lname = lnameArr.join(' ');
+        const [city, country] = formData.location.split(', ');
+        
+        const response = await fetch('/api/admin/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            userId: editingUser._id,
+            fname: fname || '',
+            lname: lname || '',
+            email: formData.email,
+            phone: formData.phone,
+            city: city || '',
+            country: country || ''
+          })
+        });
+        
+        if (response.ok) {
+          await fetchUsers();
+          setIsEditModalOpen(false);
+          setEditingUser(null);
+        }
+      } catch (error) {
+        console.error('Error updating user:', error);
+      }
     } else {
-      const newUser: User = {
-        id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
-        ...formData,
-        trips: 0,
-        joinDate: new Date().toISOString().split('T')[0]
-      };
-      setUsers([...users, newUser]);
       setIsAddModalOpen(false);
     }
     setFormData({ name: '', email: '', phone: '', location: '', status: 'Active' });
@@ -129,87 +193,104 @@ export default function AdminUsers() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
+              <option value="All">All Roles</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
             </select>
           </div>
         </div>
 
         {/* Users Table */}
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trips</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-500">Joined {user.joinDate}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                          {user.email}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500">
-                          <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                          {user.phone}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                        {user.location}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900">{user.trips}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        user.status === 'Active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(user)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">Loading users...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-red-600 mb-4">{error}</p>
+              <button 
+                onClick={fetchUsers}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">No users to show</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.map((user) => (
+                    <tr key={user._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{user.fname} {user.lname}</div>
+                          <div className="text-sm text-gray-500">Joined {new Date(user.createdAt).toLocaleDateString()}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="flex items-center text-sm text-gray-900">
+                            <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                            {user.email}
+                          </div>
+                          <div className="flex items-center text-sm text-gray-500">
+                            <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                            {user.phone || 'N/A'}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                          {user.city && user.country ? `${user.city}, ${user.country}` : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          user.role === 'admin' 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(user)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user._id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
