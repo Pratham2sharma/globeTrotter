@@ -1,8 +1,10 @@
 "use client";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Footer from "./components/Footer";
 import { useEffect } from "react";
 import type SmoothScroll from "smooth-scroll";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   useEffect(() => {
-    let scroll: SmoothScroll | undefined;
+    let scroll: any;
     import("smooth-scroll").then(({ default: SmoothScroll }) => {
       scroll = new SmoothScroll('a[href*="#"]', {
         speed: 600,
@@ -40,6 +42,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Footer />
       </body>
     </html>
   );
