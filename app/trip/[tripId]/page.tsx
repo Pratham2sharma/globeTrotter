@@ -1,109 +1,182 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Calendar,
-  Users,
   DollarSign,
-  Plane,
   Globe,
   Save,
   ArrowLeft,
+  Users,
+  Clock,
+  Sparkles,
+  Plane,
+  Heart,
 } from "lucide-react";
 import { useAuthStore } from "../../../store/authStore";
+import AIBudgetSuggestion from "../../components/AIBudgetSuggestion";
 
 interface TripData {
   destination: string;
   startDate: string;
   endDate: string;
-  travelers: number;
   budget: string;
   preferences: string[];
-  accommodation: string;
-  transportation: string;
   activities: string[];
+  isInternational: boolean;
+  travelers: number;
 }
 
-export default function PlanTrip() {
+export default function TripPage() {
   const router = useRouter();
   const params = useParams();
   const tripId = params.tripId as string;
   const { user, checkAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [tripData, setTripData] = useState<TripData>({
     destination: "",
     startDate: "",
     endDate: "",
-    travelers: 1,
     budget: "",
     preferences: [],
-    accommodation: "",
-    transportation: "",
     activities: [],
+    isInternational: false,
+    travelers: 1,
   });
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const domesticBudgetRanges = [
+    "₹10,000 - ₹25,000",
+    "₹25,000 - ₹50,000",
+    "₹50,000 - ₹1,00,000",
+    "₹1,00,000 - ₹2,00,000",
+    "₹2,00,000+",
+  ];
+
+  const internationalBudgetRanges = [
+    "₹1,00,000 - ₹2,50,000",
+    "₹2,50,000 - ₹5,00,000",
+    "₹5,00,000 - ₹10,00,000",
+    "₹10,00,000 - ₹20,00,000",
+    "₹20,00,000+",
+  ];
+
+  const budgetRanges = tripData.isInternational
+    ? internationalBudgetRanges
+    : domesticBudgetRanges;
+
+  const fetchTripData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/trips/${tripId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTripData({
+          destination: data.destination || "",
+          startDate: data.startDate?.split("T")[0] || "",
+          endDate: data.endDate?.split("T")[0] || "",
+          budget: data.budget || "",
+          preferences: data.preferences || [],
+          activities: data.activities || [],
+          isInternational: data.isInternational || false,
+          travelers: data.travelers || 1,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching trip data:", error);
+    }
+  }, [tripId]);
 
   useEffect(() => {
     checkAuth();
     if (tripId !== "new") {
       fetchTripData();
+      setSavedTripId(tripId);
     }
-  }, [checkAuth, tripId]);
+  }, [checkAuth, tripId, fetchTripData]);
 
-  const fetchTripData = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/trips/${tripId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTripData(data);
-      }
-    } catch (error) {
-      console.error("Error fetching trip data:", error);
+  const validateDates = () => {
+    if (!tripData.startDate || !tripData.endDate) return false;
+
+    const start = new Date(tripData.startDate);
+    const end = new Date(tripData.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (tripData.isInternational) {
+      return diffDays <= 60; // Max 2 months for international
+    } else {
+      return diffDays <= 14; // Max 2 weeks for domestic
     }
   };
 
-  const handleSaveTrip = async () => {
-    setLoading(true);
-    try {
-      const url = tripId === "new" ? "http://localhost:5000/api/trips" : `http://localhost:5000/api/trips/${tripId}`;
-      const method = tripId === "new" ? "POST" : "PUT";
-      
-      const payload = {
-        ...tripData,
-        userId: user?.id || "temp-user-id"
-      };
-      
-      console.log("Sending trip data:", payload);
+  const getDurationError = () => {
+    if (!tripData.startDate || !tripData.endDate) return "";
 
-      const response = await fetch(url, {
-        method,
+    const start = new Date(tripData.startDate);
+    const end = new Date(tripData.endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (tripData.isInternational && diffDays > 60) {
+      return "International trips are limited to 2 months maximum";
+    } else if (!tripData.isInternational && diffDays > 14) {
+      return "Domestic trips are limited to 2 weeks maximum";
+    }
+    return "";
+  };
+
+  const handleCreateTrip = async () => {
+    if (
+      !tripData.destination ||
+      !tripData.startDate ||
+      !tripData.endDate ||
+      !tripData.budget ||
+      !validateDates()
+    ) {
+      alert("Please fill in all required fields and check date limits");
+      return;
+    }
+
+    setLoading(true);
+    setIsAnimating(true);
+    try {
+      const response = await fetch("/api/trips", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(tripData),
       });
 
-      console.log("Response status:", response.status);
-      
       if (response.ok) {
         const savedTrip = await response.json();
-        console.log("Saved trip:", savedTrip);
-        router.push(`/profile/${user?.id || "current"}`);
+        setSavedTripId(savedTrip._id);
       } else {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
+        alert("Failed to create trip");
       }
     } catch (error) {
-      console.error("Error saving trip:", error);
+      console.error("Error creating trip:", error);
+      alert("Failed to create trip");
     } finally {
       setLoading(false);
+      setIsAnimating(false);
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -126,25 +199,21 @@ export default function PlanTrip() {
   };
 
   const preferenceOptions = [
-    "Adventure",
-    "Relaxation",
-    "Culture",
-    "Food",
-    "Nature",
-    "History",
-    "Shopping",
-    "Nightlife",
+    { name: "Adventure", icon: "🏔️", color: "bg-orange-100 text-orange-800" },
+    { name: "Relaxation", icon: "🧘", color: "bg-blue-100 text-blue-800" },
+    { name: "Culture", icon: "🏛️", color: "bg-purple-100 text-purple-800" },
+    { name: "Food", icon: "🍜", color: "bg-red-100 text-red-800" },
+    { name: "Nature", icon: "🌿", color: "bg-green-100 text-green-800" },
+    { name: "History", icon: "📚", color: "bg-yellow-100 text-yellow-800" },
   ];
 
   const activityOptions = [
-    "Sightseeing",
-    "Museums",
-    "Beach",
-    "Hiking",
-    "Photography",
-    "Local Tours",
-    "Water Sports",
-    "City Walk",
+    { name: "Sightseeing", icon: "👁️", color: "bg-teal-100 text-teal-800" },
+    { name: "Museums", icon: "🏛️", color: "bg-indigo-100 text-indigo-800" },
+    { name: "Beach", icon: "🏖️", color: "bg-cyan-100 text-cyan-800" },
+    { name: "Hiking", icon: "🥾", color: "bg-emerald-100 text-emerald-800" },
+    { name: "Photography", icon: "📸", color: "bg-pink-100 text-pink-800" },
+    { name: "Local Tours", icon: "🚌", color: "bg-amber-100 text-amber-800" },
   ];
 
   if (!user) {
@@ -159,246 +228,591 @@ export default function PlanTrip() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-slate-900 px-4 sm:px-6 py-4 shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50">
+      <header className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 sm:px-6 py-6 shadow-xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
+          <div className="flex items-center space-x-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => router.back()}
-              className="p-2 text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-3 text-white hover:bg-slate-700 rounded-xl transition-all duration-200 shadow-lg"
             >
               <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
-              <Globe className="w-6 h-6 text-slate-900" />
-            </div>
+            </motion.button>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg"
+            >
+              <Globe className="w-7 h-7 text-slate-900" />
+            </motion.div>
             <div>
-              <h1 className="text-2xl font-bold text-white">GlobeTrotter</h1>
-              <p className="text-sm text-teal-300">Plan Your Journey</p>
+              <h1 className="text-3xl font-bold text-white">GlobeTrotter</h1>
+              <p className="text-sm text-teal-300 flex items-center gap-1">
+                <Sparkles className="w-4 h-4" />
+                AI-Powered Travel Planning
+              </p>
             </div>
+          </div>
+          <div className="hidden md:flex items-center space-x-2 text-white/70">
+            <div className="flex items-center space-x-1">
+              {[1, 2, 3].map((step) => (
+                <div
+                  key={step}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    step <= currentStep ? "bg-teal-400" : "bg-white/30"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm ml-2">Step {currentStep} of 3</span>
           </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 p-8"
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8 md:p-12"
         >
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">
-              {tripId === "new" ? "Plan New Trip" : "Edit Trip"}
+          <div className="mb-10 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="w-20 h-20 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+            >
+              <Plane className="w-10 h-10 text-white" />
+            </motion.div>
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3">
+              {tripId === "new" ? "Plan Your Dream Trip" : "Trip Details"}
             </h2>
-            <p className="text-gray-600">
-              Create your perfect travel experience
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              {tripId === "new"
+                ? "Let our AI create the perfect itinerary tailored just for you. Every journey begins with a single step."
+                : "Your personalized trip details and AI-powered recommendations"}
             </p>
           </div>
 
-          <div className="space-y-8">
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-2" />
-                  Destination
-                </label>
-                <input
-                  type="text"
-                  value={tripData.destination}
-                  onChange={(e) =>
-                    setTripData((prev) => ({
-                      ...prev,
-                      destination: e.target.value,
-                    }))
-                  }
-                  placeholder="Where do you want to go?"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Users className="w-4 h-4 inline mr-2" />
-                  Number of Travelers
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={tripData.travelers || 1}
-                  onChange={(e) =>
-                    setTripData((prev) => ({
-                      ...prev,
-                      travelers: parseInt(e.target.value) || 1,
-                    }))
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={tripData.startDate}
-                  onChange={(e) =>
-                    setTripData((prev) => ({
-                      ...prev,
-                      startDate: e.target.value,
-                    }))
-                  }
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-2" />
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={tripData.endDate}
-                  onChange={(e) =>
-                    setTripData((prev) => ({ ...prev, endDate: e.target.value }))
-                  }
-                  min={tripData.startDate || new Date().toISOString().split("T")[0]}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Budget */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <DollarSign className="w-4 h-4 inline mr-2" />
-                Budget (₹)
-              </label>
-              <input
-                type="text"
-                value={tripData.budget}
-                onChange={(e) =>
-                  setTripData((prev) => ({ ...prev, budget: e.target.value }))
-                }
-                placeholder="e.g., 50,000"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Accommodation & Transportation */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Accommodation Preference
-                </label>
-                <select
-                  value={tripData.accommodation}
-                  onChange={(e) =>
-                    setTripData((prev) => ({
-                      ...prev,
-                      accommodation: e.target.value,
-                    }))
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                >
-                  <option value="">Select accommodation</option>
-                  <option value="hotel">Hotel</option>
-                  <option value="resort">Resort</option>
-                  <option value="apartment">Apartment</option>
-                  <option value="hostel">Hostel</option>
-                  <option value="villa">Villa</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Plane className="w-4 h-4 inline mr-2" />
-                  Transportation
-                </label>
-                <select
-                  value={tripData.transportation}
-                  onChange={(e) =>
-                    setTripData((prev) => ({
-                      ...prev,
-                      transportation: e.target.value,
-                    }))
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                >
-                  <option value="">Select transportation</option>
-                  <option value="flight">Flight</option>
-                  <option value="train">Train</option>
-                  <option value="bus">Bus</option>
-                  <option value="car">Car Rental</option>
-                  <option value="cruise">Cruise</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Preferences */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
-                Travel Preferences
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {preferenceOptions.map((preference) => (
-                  <button
-                    key={preference}
-                    onClick={() => handlePreferenceToggle(preference)}
-                    className={`p-3 rounded-lg border transition-colors ${
-                      tripData.preferences.includes(preference)
-                        ? "bg-teal-500 text-white border-teal-500"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-teal-300"
-                    }`}
-                  >
-                    {preference}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Activities */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-4">
-                Preferred Activities
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {activityOptions.map((activity) => (
-                  <button
-                    key={activity}
-                    onClick={() => handleActivityToggle(activity)}
-                    className={`p-3 rounded-lg border transition-colors ${
-                      tripData.activities.includes(activity)
-                        ? "bg-teal-500 text-white border-teal-500"
-                        : "bg-white text-gray-700 border-gray-300 hover:border-teal-300"
-                    }`}
-                  >
-                    {activity}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <div className="flex justify-end pt-6 border-t border-gray-200">
-              <motion.button
-                onClick={handleSaveTrip}
-                disabled={loading || !tripData.destination || !tripData.startDate}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center space-x-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          <AnimatePresence mode="wait">
+            {currentStep === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-8"
               >
-                <Save className="w-5 h-5" />
-                <span>{loading ? "Saving..." : "Save Trip"}</span>
-              </motion.button>
-            </div>
-          </div>
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-semibold text-slate-800 mb-2">
+                    Basic Information
+                  </h3>
+                  <p className="text-gray-600">
+                    Tell us about your dream destination
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="space-y-3"
+                  >
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <MapPin className="w-5 h-5 inline mr-2 text-teal-600" />
+                      Destination *
+                    </label>
+                    <input
+                      type="text"
+                      value={tripData.destination}
+                      onChange={(e) => {
+                        const dest = e.target.value;
+                        setTripData((prev) => ({
+                          ...prev,
+                          destination: dest,
+                          isInternational: ![
+                            "india",
+                            "mumbai",
+                            "delhi",
+                            "bangalore",
+                            "chennai",
+                            "kolkata",
+                            "hyderabad",
+                            "pune",
+                            "ahmedabad",
+                            "jaipur",
+                            "goa",
+                            "kerala",
+                            "rajasthan",
+                            "kashmir",
+                            "himachal",
+                            "uttarakhand",
+                          ].some((place) => dest.toLowerCase().includes(place)),
+                        }));
+                      }}
+                      placeholder="e.g., Paris, Tokyo, Goa, Mumbai..."
+                      className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
+                      disabled={tripId !== "new"}
+                      required
+                    />
+                    {tripData.destination && (
+                      <div
+                        className={`text-sm p-2 rounded-lg ${
+                          tripData.isInternational
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-green-100 text-green-800"
+                        }`}
+                      >
+                        {tripData.isInternational
+                          ? "🌍 International Trip (Max 2 months)"
+                          : "🇮🇳 Domestic Trip (Max 2 weeks)"}
+                      </div>
+                    )}
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="space-y-3"
+                  >
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <Users className="w-5 h-5 inline mr-2 text-teal-600" />
+                      Number of Travelers *
+                    </label>
+                    <select
+                      value={tripData.travelers}
+                      onChange={(e) =>
+                        setTripData((prev) => ({
+                          ...prev,
+                          travelers: parseInt(e.target.value),
+                        }))
+                      }
+                      className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
+                      disabled={tripId !== "new"}
+                      required
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                        <option key={num} value={num}>
+                          {num} {num === 1 ? "Traveler" : "Travelers"}
+                        </option>
+                      ))}
+                    </select>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="space-y-3"
+                  >
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <Calendar className="w-5 h-5 inline mr-2 text-teal-600" />
+                      Start Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={tripData.startDate}
+                      onChange={(e) =>
+                        setTripData((prev) => ({
+                          ...prev,
+                          startDate: e.target.value,
+                        }))
+                      }
+                      min={new Date().toISOString().split("T")[0]}
+                      className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
+                      disabled={tripId !== "new"}
+                      required
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="space-y-3"
+                  >
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      <Calendar className="w-5 h-5 inline mr-2 text-teal-600" />
+                      End Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={tripData.endDate}
+                      onChange={(e) =>
+                        setTripData((prev) => ({
+                          ...prev,
+                          endDate: e.target.value,
+                        }))
+                      }
+                      min={
+                        tripData.startDate ||
+                        new Date().toISOString().split("T")[0]
+                      }
+                      max={
+                        tripData.startDate
+                          ? new Date(
+                              new Date(tripData.startDate).getTime() +
+                                (tripData.isInternational ? 60 : 14) *
+                                  24 *
+                                  60 *
+                                  60 *
+                                  1000
+                            )
+                              .toISOString()
+                              .split("T")[0]
+                          : undefined
+                      }
+                      className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
+                      disabled={tripId !== "new"}
+                      required
+                    />
+                    {getDurationError() && (
+                      <div className="text-red-600 text-sm bg-red-50 p-2 rounded-lg">
+                        {getDurationError()}
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+
+                <motion.div whileHover={{ scale: 1.02 }} className="space-y-3">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    <DollarSign className="w-5 h-5 inline mr-2 text-teal-600" />
+                    Budget Range *
+                  </label>
+                  <select
+                    value={tripData.budget}
+                    onChange={(e) =>
+                      setTripData((prev) => ({
+                        ...prev,
+                        budget: e.target.value,
+                      }))
+                    }
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
+                    disabled={tripId !== "new"}
+                    required
+                  >
+                    <option value="">Select your budget range</option>
+                    {budgetRanges.map((range) => (
+                      <option key={range} value={range}>
+                        {range}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                    💡{" "}
+                    {tripData.isInternational
+                      ? "International trips include flights, accommodation, and activities"
+                      : "Domestic trips include transport, stay, and local experiences"}
+                  </div>
+                </motion.div>
+
+                <div className="flex justify-end pt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={nextStep}
+                    disabled={
+                      !tripData.destination ||
+                      !tripData.startDate ||
+                      !tripData.endDate ||
+                      !tripData.budget ||
+                      !validateDates()
+                    }
+                    className="px-8 py-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    Next Step
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      →
+                    </motion.div>
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {currentStep === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-8"
+              >
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-semibold text-slate-800 mb-2">
+                    Travel Preferences
+                  </h3>
+                  <p className="text-gray-600">
+                    What kind of experience are you looking for?
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-red-500" />
+                      What interests you most?
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {preferenceOptions.map((preference) => (
+                        <motion.button
+                          key={preference.name}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() =>
+                            handlePreferenceToggle(preference.name)
+                          }
+                          className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${
+                            tripData.preferences.includes(preference.name)
+                              ? "border-teal-500 bg-gradient-to-br from-teal-50 to-blue-50 text-teal-700 shadow-lg"
+                              : "border-gray-200 hover:border-gray-300 hover:shadow-md bg-white"
+                          }`}
+                          disabled={tripId !== "new"}
+                        >
+                          <span className="text-2xl">{preference.icon}</span>
+                          <span className="font-medium">{preference.name}</span>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-yellow-500" />
+                      Preferred Activities
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {activityOptions.map((activity) => (
+                        <motion.button
+                          key={activity.name}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleActivityToggle(activity.name)}
+                          className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 ${
+                            tripData.activities.includes(activity.name)
+                              ? "border-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 text-blue-700 shadow-lg"
+                              : "border-gray-200 hover:border-gray-300 hover:shadow-md bg-white"
+                          }`}
+                          disabled={tripId !== "new"}
+                        >
+                          <span className="text-2xl">{activity.icon}</span>
+                          <span className="font-medium">{activity.name}</span>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={prevStep}
+                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
+                  >
+                    ← Previous
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={nextStep}
+                    className="px-8 py-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2"
+                  >
+                    Next Step
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      →
+                    </motion.div>
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {currentStep === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-8"
+              >
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-semibold text-slate-800 mb-2">
+                    Review & Create
+                  </h3>
+                  <p className="text-gray-600">
+                    Let&apos;s create your perfect itinerary!
+                  </p>
+                </div>
+
+                <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl p-6 space-y-4">
+                  <h4 className="text-lg font-semibold text-slate-800 mb-4">
+                    Trip Summary
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-teal-600" />
+                      <span className="font-medium">Destination:</span>{" "}
+                      {tripData.destination}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-teal-600" />
+                      <span className="font-medium">Travelers:</span>{" "}
+                      {tripData.travelers}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-teal-600" />
+                      <span className="font-medium">Dates:</span>{" "}
+                      {tripData.startDate} to {tripData.endDate}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-teal-600" />
+                      <span className="font-medium">Budget:</span>{" "}
+                      {tripData.budget}
+                    </div>
+                  </div>
+                  {tripData.preferences.length > 0 && (
+                    <div>
+                      <span className="font-medium text-slate-700">
+                        Preferences:
+                      </span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {tripData.preferences.map((pref) => (
+                          <span
+                            key={pref}
+                            className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-xs"
+                          >
+                            {pref}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {tripData.activities.length > 0 && (
+                    <div>
+                      <span className="font-medium text-slate-700">
+                        Activities:
+                      </span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {tripData.activities.map((activity) => (
+                          <span
+                            key={activity}
+                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                          >
+                            {activity}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={prevStep}
+                    className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
+                  >
+                    ← Previous
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleCreateTrip}
+                    disabled={loading || !validateDates()}
+                    className="px-8 py-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                        />
+                        Creating Trip...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-5 h-5" />
+                        Create My Trip
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* AI Suggestions */}
+          {savedTripId && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+              className="mt-12"
+            >
+              <div className="text-center mb-6">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg"
+                >
+                  <Sparkles className="w-8 h-8 text-white" />
+                </motion.div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                  AI-Powered Itinerary
+                </h3>
+                <p className="text-gray-600">
+                  Your personalized travel plan is being generated...
+                </p>
+              </div>
+              <AIBudgetSuggestion tripId={savedTripId} />
+            </motion.div>
+          )}
         </motion.div>
       </div>
+
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isAnimating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-white rounded-2xl p-8 text-center shadow-2xl"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4"
+              >
+                <Globe className="w-8 h-8 text-white" />
+              </motion.div>
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                Creating Your Dream Trip
+              </h3>
+              <p className="text-gray-600">
+                Our AI is crafting the perfect itinerary for you...
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
