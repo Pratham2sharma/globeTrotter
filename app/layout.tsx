@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./components/Footer";
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import type SmoothScroll from "smooth-scroll";
 
 const geistSans = Geist({
@@ -20,6 +21,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const isAdminPage = pathname?.startsWith('/admin');
+
   useEffect(() => {
     let scroll: SmoothScroll | undefined;
     import("smooth-scroll").then(({ default: SmoothScroll }) => {
@@ -41,7 +45,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        <Footer />
+        {!isAdminPage && <Footer />}
       </body>
     </html>
   );

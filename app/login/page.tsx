@@ -12,17 +12,20 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-const router = useRouter();
-const { login, isLoading, error, clearError, user } = useAuthStore();
-const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 'error' | 'success' });
-
+  const router = useRouter();
+  const { login, isLoading, error, clearError, user } = useAuthStore();
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "error" as "error" | "success",
+  });
 
   useEffect(() => {
     if (user) {
       if (user.role === "admin") {
-        router.push("/admin");
+        router.replace("/admin");
       } else {
-        router.push("/");
+        router.replace("/");
       }
     }
   }, [user, router]);
@@ -33,12 +36,16 @@ const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 
 
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
-      setToast({ show: true, message: emailValidation.message!, type: 'error' });
+      setToast({
+        show: true,
+        message: emailValidation.message!,
+        type: "error",
+      });
       return;
     }
 
     if (!password.trim()) {
-      setToast({ show: true, message: 'Password is required', type: 'error' });
+      setToast({ show: true, message: "Password is required", type: "error" });
       return;
     }
 
@@ -46,7 +53,7 @@ const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 
     if (!success) {
       // Error is handled by the store
     } else {
-      setToast({ show: true, message: 'Login successful!', type: 'success' });
+      setToast({ show: true, message: "Login successful!", type: "success" });
     }
     // Redirect will be handled by useEffect after user is updated
   };
@@ -91,6 +98,7 @@ const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address"
                 required
+                suppressHydrationWarning
                 className="w-full pl-9 pr-3 py-3 border-2 border-[#5BC0BE] rounded-lg bg-[#F8F9FA] text-[#343A40] text-sm outline-none focus:border-[#FFD700] focus:shadow-[0_0_0_2px_rgba(255,215,0,0.1)]"
               />
             </div>
@@ -107,12 +115,14 @@ const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 required
+                suppressHydrationWarning
                 className="w-full pl-9 pr-10 py-3 border-2 border-[#5BC0BE] rounded-lg bg-[#F8F9FA] text-[#343A40] text-sm outline-none focus:border-[#FFD700] focus:shadow-[0_0_0_2px_rgba(255,215,0,0.1)]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-2.5 top-1/2 transform -translate-y-1/2 p-1"
+                suppressHydrationWarning
               >
                 {showPassword ? (
                   <EyeOff size={16} className="text-[#5BC0BE]" />
@@ -126,16 +136,20 @@ const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 
               type="submit"
               disabled={isLoading}
               className="w-full py-3 bg-[#FFD700] text-[#0A192F] font-semibold rounded-lg hover:bg-[#FFD700]/90 transition-colors disabled:opacity-50 mt-2"
+              suppressHydrationWarning
             >
               {isLoading ? "Signing In..." : "Sign In"}
             </button>
 
             <div className="text-center text-sm mt-4">
-              <span className="text-[#343A40]">Don&apos;t have an account? </span>
+              <span className="text-[#343A40]">
+                Don&apos;t have an account?{" "}
+              </span>
               <button
                 type="button"
                 onClick={() => router.push("/register")}
                 className="text-[#5BC0BE] font-semibold hover:underline"
+                suppressHydrationWarning
               >
                 Sign up
               </button>
@@ -143,12 +157,12 @@ const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 
           </form>
         </div>
       </motion.div>
-      
+
       <ValidationToast
         message={toast.message}
         type={toast.type}
         isVisible={toast.show}
-        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
       />
     </div>
   );

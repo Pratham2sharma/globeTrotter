@@ -20,6 +20,7 @@ import {
   Camera,
   Heart,
 } from "lucide-react";
+import TripCalendar from "./components/TripCalendar";
 import { useAuthStore } from "../store/authStore";
 import { useRouter } from "next/navigation";
 import ValidationToast from "../components/ValidationToast";
@@ -238,24 +239,9 @@ function Home() {
               >
                 Activity Search
               </motion.a>
-              <motion.a
-                href="#"
-                whileHover={{
-                  y: -3,
-                  color: "#14b8a6",
-                  textShadow: "0 0 8px rgba(20, 184, 166, 0.5)",
-                }}
-                transition={{ duration: 0.3 }}
-                className="text-gray-300 font-medium tracking-wide relative group"
-              >
-                City
-                <motion.span
-                  className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-teal-400 to-yellow-400"
-                  initial={{ width: 0 }}
-                  whileHover={{ width: "100%" }}
-                  transition={{ duration: 0.4 }}
-                />
-              </motion.a>
+
+              {user && <TripCalendar userId={user.id} />}
+
               {user ? (
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-2">

@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ITrip extends Document {
-  userId: string;
+  userId: mongoose.Types.ObjectId;
   destination: string;
   startDate: Date;
   endDate: Date;
@@ -11,8 +11,9 @@ export interface ITrip extends Document {
   accommodation: string;
   transportation: string;
   activities: string[];
-  status: string;
+  status: 'planning' | 'booked' | 'completed' | 'cancelled';
   coverPhoto?: string;
+  coverImageFile?: string; // Path to uploaded image file
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,7 +21,8 @@ export interface ITrip extends Document {
 const tripSchema: Schema<ITrip> = new Schema(
   {
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     destination: {
@@ -69,6 +71,10 @@ const tripSchema: Schema<ITrip> = new Schema(
     coverPhoto: {
       type: String,
       default: null,
+    },
+    coverImageFile: {
+      type: String,
+      trim: true,
     },
   },
   { timestamps: true }

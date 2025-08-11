@@ -20,6 +20,7 @@ interface TripData {
   budget: string;         // Selected budget range
   travelStyle: string;    // Selected travel style ID
   interests: string[];    // Array of selected interests
+  coverImage: File | null; // Cover image file for the trip
 }
 
 // Destination option structure for popular destinations
@@ -50,7 +51,8 @@ export default function PlanTrip() {
     travelers: 1,          // Default to 1 traveler
     budget: '',
     travelStyle: '',
-    interests: []          // Empty array for multi-select interests
+    interests: [],         // Empty array for multi-select interests
+    coverImage: null       // No image selected initially
   });
   
 
@@ -381,6 +383,39 @@ export default function PlanTrip() {
               </div>
             </div>
 
+            {/* Cover Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Trip Cover Image (Optional)
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setTripData({ ...tripData, coverImage: file });
+                  }}
+                  className="hidden"
+                  id="cover-image"
+                />
+                <label htmlFor="cover-image" className="cursor-pointer">
+                  {tripData.coverImage ? (
+                    <div className="space-y-2">
+                      <div className="text-green-600">✓ Image selected: {tripData.coverImage.name}</div>
+                      <p className="text-sm text-gray-500">Click to change image</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-gray-400 text-4xl">📷</div>
+                      <p className="text-gray-600">Click to upload cover image</p>
+                      <p className="text-sm text-gray-500">PNG, JPG up to 10MB</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
             {/* Trip Summary */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-semibold text-slate-900 mb-2">Trip Summary</h4>
@@ -390,6 +425,7 @@ export default function PlanTrip() {
                 <p><span className="font-medium">Travelers:</span> {tripData.travelers}</p>
                 <p><span className="font-medium">Budget:</span> {tripData.budget}</p>
                 <p><span className="font-medium">Style:</span> {travelStyles.find(s => s.id === tripData.travelStyle)?.name}</p>
+                {tripData.coverImage && <p><span className="font-medium">Cover Image:</span> {tripData.coverImage.name}</p>}
               </div>
             </div>
           </div>
