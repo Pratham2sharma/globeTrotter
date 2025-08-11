@@ -11,7 +11,6 @@ import {
   Save,
   ArrowLeft,
   Users,
-  Clock,
   Sparkles,
   Plane,
   Heart,
