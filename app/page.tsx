@@ -359,7 +359,7 @@ export default function Home() {
                         boxShadow: "0 20px 40px -10px rgba(20, 184, 166, 0.3)",
                       }}
                       whileTap={{ scale: 0.98 }}
-                      className="w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white p-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+                      className="w-full mt-7 bg-gradient-to-r from-teal-500 to-teal-600 text-white p-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
                     >
                       {field.text}
                     </motion.button>
