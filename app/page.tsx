@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-// ============================================================================
-// HOME PAGE COMPONENT - Landing page with call-to-action buttons
-// ============================================================================
-=======
 "use client";
 import { useState } from "react";
 import Image from "next/image";
@@ -13,7 +8,6 @@ import {
   useTransform,
 } from "framer-motion";
 
->>>>>>> 70ff9982aee95eaefa1c6b1f35f00bfe497e237f
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { scrollYProgress } = useScroll();
@@ -65,34 +59,6 @@ export default function Home() {
   };
 
   return (
-<<<<<<< HEAD
-    // Full-screen container with centered content
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        {/* Main heading with brand colors */}
-        <h1 className="text-4xl font-bold text-slate-900 mb-4">Welcome to GlobeTrotter</h1>
-        
-        {/* Subtitle describing the app */}
-        <p className="text-lg text-gray-600 mb-8">Your premium travel planning companion</p>
-        
-        {/* Action buttons with brand styling */}
-        <div className="space-x-4">
-          {/* Primary CTA: Dashboard access */}
-          <a 
-            href="/userprofile" 
-            className="px-6 py-3 bg-yellow-400 text-slate-900 rounded-lg font-semibold hover:bg-yellow-300 transition-colors inline-block"
-          >
-            Go to Dashboard
-          </a>
-          
-          {/* Secondary CTA: Trip planning */}
-          <a 
-            href="/plan-trip" 
-            className="px-6 py-3 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition-colors inline-block"
-          >
-            Plan New Trip
-          </a>
-=======
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Navigation Bar */}
       <motion.nav
@@ -237,7 +203,6 @@ export default function Home() {
               </motion.div>
             )}
           </AnimatePresence>
->>>>>>> 70ff9982aee95eaefa1c6b1f35f00bfe497e237f
         </div>
       </motion.nav>
 
