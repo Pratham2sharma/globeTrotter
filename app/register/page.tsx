@@ -4,17 +4,9 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStore";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  Globe,
-  User,
-  Phone,
-  MapPin,
-  FileText,
-} from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Globe, User, Phone, MapPin, FileText } from "lucide-react";
+import ValidationToast from "../../components/ValidationToast";
+import { validateEmail, validatePassword, validateName } from "../../lib/validation";
 
 const RegisterPage = () => {
   const [firstName, setFirstName] = useState("");
@@ -28,6 +20,7 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 'error' | 'success' });
 
   const router = useRouter();
   const { register, isLoading, error, clearError } = useAuthStore();
@@ -35,6 +28,55 @@ const RegisterPage = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearError();
+
+    const firstNameValidation = validateName(firstName);
+    if (!firstNameValidation.isValid) {
+      setToast({ show: true, message: `First name: ${firstNameValidation.message}`, type: 'error' });
+      return;
+    }
+    
+    const lastNameValidation = validateName(lastName);
+    if (!lastNameValidation.isValid) {
+      setToast({ show: true, message: `Last name: ${lastNameValidation.message}`, type: 'error' });
+      return;
+    }
+    
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setToast({ show: true, message: emailValidation.message!, type: 'error' });
+      return;
+    }
+    
+    if (!phone.trim()) {
+      setToast({ show: true, message: 'Phone number is required', type: 'error' });
+      return;
+    }
+    
+    if (!/^[\d\s\+\-\(\)]+$/.test(phone)) {
+      setToast({ show: true, message: 'Please enter a valid phone number', type: 'error' });
+      return;
+    }
+    
+    if (!city.trim()) {
+      setToast({ show: true, message: 'City is required', type: 'error' });
+      return;
+    }
+    
+    if (!country.trim()) {
+      setToast({ show: true, message: 'Country is required', type: 'error' });
+      return;
+    }
+    
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setToast({ show: true, message: passwordValidation.message!, type: 'error' });
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setToast({ show: true, message: 'Passwords do not match', type: 'error' });
+      return;
+    }
 
     const success = await register({
       firstName,
@@ -49,6 +91,7 @@ const RegisterPage = () => {
     });
 
     if (success) {
+      setToast({ show: true, message: 'Account created successfully!', type: 'success' });
       router.push('/login');
     }
   };
@@ -266,6 +309,13 @@ const RegisterPage = () => {
           </form>
         </div>
       </motion.div>
+      
+      <ValidationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 };

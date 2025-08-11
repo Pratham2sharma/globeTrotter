@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useRouter } from "next/navigation";
+import ValidationToast from "../components/ValidationToast";
+import { validateDestination, getDateValidation } from "../lib/validation";
 
 function Home() {
   const router = useRouter();
@@ -30,9 +32,13 @@ function Home() {
   const [searchData, setSearchData] = useState({ destination: "", date: "" });
   const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "error" as "error" | "success",
+  });
   const { scrollYProgress } = useScroll();
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
   const { user, checkAuth } = useAuthStore();
 
   useEffect(() => {
@@ -48,20 +54,63 @@ function Home() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchData.destination.trim()) {
-      window.location.href = `/city-search?q=${encodeURIComponent(
-        searchData.destination
-      )}`;
+
+    const destValidation = validateDestination(searchData.destination);
+    if (!destValidation.isValid) {
+      setToast({ show: true, message: destValidation.message!, type: "error" });
+      return;
     }
+
+    if (searchData.date) {
+      const selectedDate = new Date(searchData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate < today) {
+        setToast({
+          show: true,
+          message: "Please select a future date for your trip",
+          type: "error",
+        });
+        return;
+      }
+    }
+
+    window.location.href = `/city-search?q=${encodeURIComponent(
+      searchData.destination
+    )}`;
   };
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim() && email.includes("@")) {
-      setIsSubscribed(true);
-      setEmail("");
-      setTimeout(() => setIsSubscribed(false), 3000);
+
+    if (!email.trim()) {
+      setToast({
+        show: true,
+        message: "Please enter your email address",
+        type: "error",
+      });
+      return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setToast({
+        show: true,
+        message: "Please enter a valid email address",
+        type: "error",
+      });
+      return;
+    }
+
+    setIsSubscribed(true);
+    setEmail("");
+    setToast({
+      show: true,
+      message: "Successfully subscribed to our newsletter!",
+      type: "success",
+    });
+    setTimeout(() => setIsSubscribed(false), 3000);
   };
 
   const luxuryVariants = {
@@ -187,13 +236,7 @@ function Home() {
                 transition={{ duration: 0.3 }}
                 className="text-gray-300 font-medium tracking-wide relative group"
               >
-                Experiences
-                <motion.span
-                  className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-teal-400 to-yellow-400"
-                  initial={{ width: 0 }}
-                  whileHover={{ width: "100%" }}
-                  transition={{ duration: 0.4 }}
-                />
+                Activity Search
               </motion.a>
               <motion.a
                 href="#"
@@ -376,9 +419,10 @@ function Home() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1.5 }}
-        className="relative h-[100vh] overflow-hidden"
+        className="relative h-[100vh] sm:h-[90vh] md:h-[100vh] overflow-hidden"
         style={{
-          backgroundImage: "url('https://i.ibb.co/FLtCHdWV/travel-BG.jpg')",
+          backgroundImage:
+            "url('https://i.ibb.co/Z6gs3DHn/istockphoto-1526986072-612x612.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center top",
           backgroundRepeat: "no-repeat",
@@ -414,7 +458,7 @@ function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/80 to-transparent" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -423,7 +467,7 @@ function Home() {
               duration: 1.2,
               ease: "easeOut" as const,
             }}
-            className="text-white max-w-5xl"
+            className="text-white max-w-5xl w-full"
           >
             {/* Floating Badge */}
             <motion.div
@@ -442,7 +486,7 @@ function Home() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1, duration: 1 }}
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light mb-6 leading-tight"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-light mb-4 sm:mb-6 leading-tight text-center sm:text-left"
             >
               Discover{" "}
               <motion.span
@@ -454,8 +498,8 @@ function Home() {
               >
                 Extraordinary
               </motion.span>
-              <br />
-              <span className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl">
+              <br className="hidden sm:block" />
+              <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl block sm:inline">
                 Destinations
               </span>
             </motion.h2>
@@ -464,11 +508,11 @@ function Home() {
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.3, duration: 0.8 }}
-              className="text-xl md:text-2xl mb-10 text-gray-200 font-light leading-relaxed max-w-3xl"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 md:mb-10 text-gray-200 font-light leading-relaxed max-w-3xl text-center sm:text-left"
             >
-              Embark on unforgettable journeys to the world's most breathtaking
-              destinations. From pristine beaches to majestic mountains, your
-              dream adventure awaits.
+              Embark on unforgettable journeys to the world&apos;s most
+              breathtaking destinations. From pristine beaches to majestic
+              mountains, your dream adventure awaits.
             </motion.p>
 
             {/* CTA Buttons */}
@@ -476,13 +520,13 @@ function Home() {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.6, duration: 0.8 }}
-              className="flex flex-col sm:flex-row gap-4"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center sm:items-start"
             >
               <motion.a
-                href="/trip/new"
+                href="/plan-trip"
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-teal-500 to-teal-600 px-8 py-4 rounded-full text-white font-semibold shadow-2xl hover:shadow-teal-500/25 transition-all"
+                className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-teal-500 to-teal-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold shadow-2xl hover:shadow-teal-500/25 transition-all w-full sm:w-auto text-sm sm:text-base"
               >
                 <Calendar className="w-5 h-5" />
                 <span>Plan Your Journey</span>
@@ -490,13 +534,13 @@ function Home() {
               </motion.a>
 
               <motion.a
-                href="/city-search"
+                href="/userprofile"
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-8 py-4 rounded-full text-white font-semibold border border-white/20 hover:bg-white/20 transition-all"
+                className="inline-flex items-center justify-center space-x-2 bg-white/10 backdrop-blur-md px-6 sm:px-8 py-3 sm:py-4 rounded-full text-white font-semibold border border-white/20 hover:bg-white/20 transition-all w-full sm:w-auto text-sm sm:text-base"
               >
                 <MapPin className="w-5 h-5" />
-                <span>Explore Destinations</span>
+                <span>My Profile</span>
               </motion.a>
             </motion.div>
           </motion.div>
@@ -508,7 +552,7 @@ function Home() {
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 1.8, duration: 1 }}
-        className="-mt-16 relative z-10 max-w-4xl mx-auto px-4 sm:px-6"
+        className="-mt-16 relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"
       >
         <motion.div
           whileHover={{
@@ -519,9 +563,9 @@ function Home() {
         >
           <form
             onSubmit={handleSearch}
-            className="grid grid-cols-1 md:grid-cols-4 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
-            <div className="md:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Where to?
               </label>
@@ -550,7 +594,8 @@ function Home() {
                 onChange={(e) =>
                   setSearchData((prev) => ({ ...prev, date: e.target.value }))
                 }
-                min={new Date().toISOString().split("T")[0]}
+                min={getDateValidation().min}
+                max={getDateValidation().max}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
               />
             </div>
@@ -583,7 +628,7 @@ function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl font-light text-slate-900 mb-4">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-light text-slate-900 mb-4">
               Why Choose
               <span className="block font-bold bg-gradient-to-r from-teal-600 to-yellow-500 bg-clip-text text-transparent">
                 GlobeTrotter?
@@ -659,13 +704,13 @@ function Home() {
           >
             <Camera className="w-12 h-12 text-teal-500" />
           </motion.div>
-          <h3 className="text-5xl font-light text-slate-900 mb-6">
+          <h3 className="text-3xl sm:text-4xl md:text-5xl font-light text-slate-900 mb-6">
             Featured
             <span className="block font-bold bg-gradient-to-r from-teal-600 to-yellow-500 bg-clip-text text-transparent">
               Destinations
             </span>
           </h3>
-          <p className="text-gray-600 text-xl max-w-3xl mx-auto leading-relaxed">
+          <p className="text-gray-600 text-base sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
             Discover breathtaking locations handpicked by our travel experts.
             Each destination offers unique experiences and unforgettable
             memories.
@@ -677,7 +722,7 @@ function Home() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
         >
           {[
             {
@@ -928,7 +973,132 @@ function Home() {
                         </div>
 
                         <blockquote className="text-xl md:text-2xl text-gray-700 font-light leading-relaxed mb-6 italic">
-                          "{testimonial.text}"
+                          &quote;{testimonial.text}&quot;
+                        </blockquote>
+
+                        <div>
+                          <div className="font-semibold text-gray-900 text-lg">
+                            {testimonial.name}
+                          </div>
+                          <div className="text-gray-600">
+                            {testimonial.location}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+            )}
+          </motion.div>
+
+          {/* Testimonial Indicators */}
+          <div className="flex justify-center space-x-2 mt-8">
+            {[0, 1, 2].map((index) => (
+              <motion.button
+                key={index}
+                onClick={() => setCurrentTestimonial(index)}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  currentTestimonial === index
+                    ? "bg-teal-500 shadow-lg"
+                    : "bg-gray-300 hover:bg-gray-400"
+                }`}
+                aria-label={`View testimonial ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Previous Trips */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="py-20 bg-gradient-to-br from-teal-50 via-white to-yellow-50"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-light text-slate-900 mb-4">
+              What Our
+              <span className="block font-bold bg-gradient-to-r from-teal-600 to-yellow-500 bg-clip-text text-transparent">
+                Travelers Say
+              </span>
+            </h3>
+          </motion.div>
+
+          <motion.div
+            key={currentTestimonial}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-4xl mx-auto"
+          >
+            {[
+              {
+                name: "Sarah Johnson",
+                location: "New York, USA",
+                text: "GlobeTrotter made our honeymoon absolutely magical. Every detail was perfect, from the luxury accommodations to the personalized experiences.",
+                rating: 5,
+                image: "https://randomuser.me/api/portraits/women/44.jpg",
+              },
+              {
+                name: "Raj Patel",
+                location: "Mumbai, India",
+                text: "The Swiss Alps trip exceeded all expectations. Professional guides, stunning locations, and memories that will last a lifetime.",
+                rating: 5,
+                image:
+                  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
+              },
+              {
+                name: "Emma Wilson",
+                location: "London, UK",
+                text: "From booking to return, everything was seamless. The attention to detail and customer service is unmatched in the travel industry.",
+                rating: 5,
+                image:
+                  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
+              },
+            ].map(
+              (testimonial, index) =>
+                currentTestimonial === index && (
+                  <motion.div
+                    key={index}
+                    className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 border border-gray-100"
+                  >
+                    <div className="flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-8">
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        className="flex-shrink-0"
+                      >
+                        <Image
+                          src={testimonial.image}
+                          alt={testimonial.name}
+                          width={100}
+                          height={100}
+                          className="rounded-full border-4 border-teal-200"
+                          unoptimized={true}
+                        />
+                      </motion.div>
+
+                      <div className="flex-1 text-center md:text-left">
+                        <div className="flex justify-center md:justify-start items-center space-x-1 mb-4">
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className="w-5 h-5 text-yellow-400 fill-current"
+                            />
+                          ))}
+                        </div>
+
+                        <blockquote className="text-xl md:text-2xl text-gray-700 font-light leading-relaxed mb-6 italic">
+                          &quot;{testimonial.text}&quot;
                         </blockquote>
 
                         <div>
@@ -980,7 +1150,7 @@ function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl font-light text-slate-900 mb-4">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-light text-slate-900 mb-4">
               Previous
               <span className="block font-bold bg-gradient-to-r from-slate-700 to-teal-500 bg-clip-text text-transparent">
                 Trips
@@ -1142,8 +1312,10 @@ function Home() {
             viewport={{ once: true }}
             className="text-white"
           >
-            <h3 className="text-4xl font-bold mb-4">Stay Updated</h3>
-            <p className="text-xl text-teal-100 mb-8">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+              Stay Updated
+            </h3>
+            <p className="text-base sm:text-lg md:text-xl text-teal-100 mb-6 sm:mb-8">
               Get exclusive travel deals and destination insights delivered to
               your inbox
             </p>
@@ -1163,7 +1335,7 @@ function Home() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="flex-1 px-6 py-3 rounded-full text-gray-900 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all"
+                className="flex-1 px-6 py-3 rounded-full text-gray-900 bg-white/90 focus:outline-none focus:ring-4 focus:ring-teal-200 transition-all border border-teal-300"
               />
               <motion.button
                 type="submit"
@@ -1194,7 +1366,7 @@ function Home() {
         initial={{ scale: 0, rotate: -180, opacity: 0 }}
         animate={{ scale: 1, rotate: 0, opacity: 1 }}
         transition={{ delay: 2.5, duration: 1, ease: "easeOut" as const }}
-        className="fixed bottom-8 right-8 z-50"
+        className="fixed bottom-4 sm:bottom-8 right-4 sm:right-8 z-50"
       >
         <motion.a
           href="/trip/new"
@@ -1216,13 +1388,20 @@ function Home() {
             y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
             boxShadow: { duration: 3, repeat: Infinity, ease: "easeInOut" },
           }}
-          className="flex items-center space-x-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-4 rounded-full font-semibold shadow-2xl backdrop-blur-sm border border-teal-400/20 group"
+          className="flex items-center space-x-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-full font-semibold shadow-2xl backdrop-blur-sm border border-teal-400/20 group text-sm sm:text-base"
         >
           <Plane className="w-5 h-5 group-hover:rotate-12 transition-transform" />
           <span className="hidden sm:inline">Plan Journey</span>
           <span className="sm:hidden">Plan</span>
         </motion.a>
       </motion.div>
+
+      <ValidationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+      />
     </div>
   );
 }

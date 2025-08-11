@@ -5,13 +5,17 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/authStore";
 import { Eye, EyeOff, Mail, Lock, Globe } from "lucide-react";
+import ValidationToast from "../../components/ValidationToast";
+import { validateEmail } from "../../lib/validation";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-  const { login, isLoading, error, clearError, user } = useAuthStore();
+const router = useRouter();
+const { login, isLoading, error, clearError, user } = useAuthStore();
+const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 'error' | 'success' });
+
 
   useEffect(() => {
     if (user) {
@@ -27,15 +31,28 @@ const LoginPage = () => {
     e.preventDefault();
     clearError();
 
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setToast({ show: true, message: emailValidation.message!, type: 'error' });
+      return;
+    }
+
+    if (!password.trim()) {
+      setToast({ show: true, message: 'Password is required', type: 'error' });
+      return;
+    }
+
     const success = await login(email, password);
     if (!success) {
       // Error is handled by the store
+    } else {
+      setToast({ show: true, message: 'Login successful!', type: 'success' });
     }
     // Redirect will be handled by useEffect after user is updated
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#0A192F] font-sans overflow-auto">
+    <div className="min-h-screen bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -114,7 +131,7 @@ const LoginPage = () => {
             </button>
 
             <div className="text-center text-sm mt-4">
-              <span className="text-[#343A40]">Don't have an account? </span>
+              <span className="text-[#343A40]">Don&apos;t have an account? </span>
               <button
                 type="button"
                 onClick={() => router.push("/register")}
@@ -126,6 +143,13 @@ const LoginPage = () => {
           </form>
         </div>
       </motion.div>
+      
+      <ValidationToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.show}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
     </div>
   );
 };

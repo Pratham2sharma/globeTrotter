@@ -16,10 +16,6 @@ interface IUser extends Document {
   updatedAt: Date;
 }
 
-interface UserModel extends Model<IUser> {
-  // Add any static methods here if needed
-}
-
 const userSchema = new mongoose.Schema(
   {
     fname: {
@@ -91,6 +87,6 @@ userSchema.pre("save", async function (next) {
 });
 
 const User = (mongoose.models.User ||
-  mongoose.model<IUser, UserModel>("User", userSchema)) as UserModel;
+  mongoose.model<IUser>("User", userSchema)) as Model<IUser>;
 
 export default User;

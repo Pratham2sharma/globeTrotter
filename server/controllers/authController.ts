@@ -3,6 +3,7 @@ import { connectDB } from "../lib/db";
 import User from "../model/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
 
 interface IUser {
   _id: string;
@@ -20,7 +21,17 @@ interface IUser {
   updatedAt: Date;
 }
 
-export const registerUser = async (request: NextRequest): Promise<NextResponse> => {
+interface JWTPayload {
+  userId: string;
+  email: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}
+
+export const registerUser = async (
+  request: NextRequest
+): Promise<NextResponse> => {
   try {
     const {
       firstName,
@@ -50,7 +61,7 @@ export const registerUser = async (request: NextRequest): Promise<NextResponse> 
       );
     }
 
-    const newUser = await User.create({
+    await User.create({
       fname: firstName,
       lname: lastName,
       email,
@@ -76,7 +87,9 @@ export const registerUser = async (request: NextRequest): Promise<NextResponse> 
   }
 };
 
-export const loginUser = async (request: NextRequest): Promise<NextResponse> => {
+export const loginUser = async (
+  request: NextRequest
+): Promise<NextResponse> => {
   try {
     const { email, password } = await request.json();
 
@@ -89,7 +102,7 @@ export const loginUser = async (request: NextRequest): Promise<NextResponse> => 
 
     await connectDB();
 
-    const user = await User.findOne({ email }) as IUser | null;
+    const user = (await User.findOne({ email })) as IUser | null;
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
@@ -141,7 +154,7 @@ export const loginUser = async (request: NextRequest): Promise<NextResponse> => 
 
 export const logoutUser = async (): Promise<NextResponse> => {
   const response = NextResponse.json({ message: "Logout successful" });
-  
+
   response.cookies.set("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -152,30 +165,26 @@ export const logoutUser = async (): Promise<NextResponse> => {
   return response;
 };
 
-export const getCurrentUser = async (request: NextRequest): Promise<NextResponse> => {
+export const getCurrentUser = async (
+  request: NextRequest
+): Promise<NextResponse> => {
   try {
     const token = request.cookies.get("token")?.value;
 
     if (!token) {
-      return NextResponse.json(
-        { error: "Not authenticated" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || "fallback-secret"
-    ) as any;
-    
+    ) as JWTPayload;
+
     await connectDB();
-    const user = await User.findById(decoded.userId) as IUser | null;
+    const user = (await User.findById(decoded.userId)) as IUser | null;
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -187,20 +196,17 @@ export const getCurrentUser = async (request: NextRequest): Promise<NextResponse
         avatar: user.avatar,
       },
     });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Invalid token" },
-      { status: 401 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
   }
 };
 
-export const getUserProfile = async (req: any, res: any) => {
+export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    
+
     await connectDB();
-    const user = await User.findById(userId) as IUser | null;
+    const user = (await User.findById(userId)) as IUser | null;
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -219,8 +225,8 @@ export const getUserProfile = async (req: any, res: any) => {
     };
 
     res.json(userProfile);
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
+  } catch {
+    console.error("Error fetching user profile:");
     res.status(500).json({ error: "Internal server error" });
   }
 };
