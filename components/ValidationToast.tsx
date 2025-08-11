@@ -25,7 +25,7 @@ export default function ValidationToast({ message, type, isVisible, onClose }: V
           initial={{ opacity: 0, y: -50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -50, scale: 0.9 }}
-          className="fixed top-4 right-4 z-50 max-w-sm"
+          className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 z-50 max-w-sm mx-auto sm:mx-0"
         >
           <div className={`rounded-lg shadow-lg border p-4 ${
             type === "error" 
