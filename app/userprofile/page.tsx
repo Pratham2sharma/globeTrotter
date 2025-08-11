@@ -1,60 +1,85 @@
 "use client"
 
+// React imports for component functionality
 import React, { useState } from 'react';
+// Lucide React icons for consistent UI iconography
 import { Calendar, MapPin, Users, Plus, Globe, Star, Clock, ArrowRight, Plane, Camera, Coffee, User, Settings, Edit3, X, Heart, Award, Languages } from 'lucide-react';
 
-// Type definitions
+// ============================================================================
+// TYPE DEFINITIONS - Define data structures for type safety
+// ============================================================================
+
+// Trip interface - represents a travel itinerary
 interface Trip {
-  id: number;
-  destination: string;
-  cities: string[];
-  dates: string;
-  budget: string;
-  status: 'Planning' | 'Booked' | 'Completed';
-  progress: number;
-  image: string;
+  id: number;                    // Unique identifier
+  destination: string;           // Main destination name
+  cities: string[];             // List of cities to visit
+  dates: string;                // Travel date range
+  budget: string;               // Trip budget in currency
+  status: 'Planning' | 'Booked' | 'Completed'; // Trip status
+  progress: number;             // Planning completion percentage (0-100)
+  image: string;                // Emoji or image representation
 }
 
+// Destination interface - represents popular travel destinations
 interface Destination {
-  name: string;
-  country: string;
-  rating: number;
-  trips: number;
-  image: string;
+  name: string;                 // Destination name
+  country: string;              // Country name
+  rating: number;               // User rating (1-5)
+  trips: number;                // Number of trips planned to this destination
+  image: string;                // Emoji or image representation
 }
 
+// Activity interface - represents recent user activities
 interface Activity {
-  action: string;
-  location: string;
-  time: string;
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+  action: string;               // Description of the action
+  location: string;             // Location where action occurred
+  time: string;                 // Time when action occurred
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; // Icon component
 }
 
+// Travel statistics interface
 interface TravelStats {
-  tripsPlanned: number;
-  citiesVisited: number;
-  totalBudget: string;
+  tripsPlanned: number;         // Total number of trips planned
+  citiesVisited: number;        // Total cities visited
+  totalBudget: string;          // Total budget across all trips
 }
 
+// Tab types for trip categorization
 type TabType = 'upcoming' | 'past' | 'shared';
 
+// User profile interface - complete user information
 interface UserProfile {
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  joinDate: string;
-  avatar: string;
-  bio: string;
-  age: number;
-  travelPreference: string;
-  languages: string[];
+  name: string;                 // Full name
+  email: string;                // Email address
+  phone: string;                // Phone number
+  location: string;             // Current location
+  joinDate: string;             // When user joined the platform
+  avatar: string;               // Avatar initials or image
+  bio: string;                  // User biography
+  age: number;                  // User age
+  travelPreference: string;     // Preferred travel style
+  languages: string[];          // Languages spoken
 }
 
+// ============================================================================
+// MAIN COMPONENT - UserProfile Dashboard
+// ============================================================================
 export default function UserProfile() {
+  // ============================================================================
+  // STATE MANAGEMENT - React hooks for component state
+  // ============================================================================
+  
+  // Active tab for trip categorization (upcoming, past, shared)
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
+  
+  // Controls profile modal visibility
   const [showProfile, setShowProfile] = useState(false);
+  
+  // Controls profile editing mode
   const [isEditing, setIsEditing] = useState(false);
+  
+  // User profile data with default values
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: 'John Doe',
     email: 'john.doe@email.com',
@@ -68,14 +93,19 @@ export default function UserProfile() {
     languages: ['English', 'Hindi', 'Spanish']
   });
 
+  // ============================================================================
+  // MOCK DATA - Sample data for demonstration (replace with API calls)
+  // ============================================================================
+  
+  // Pre-planned trips data - trips user has planned but not yet taken
   const prePlannedTrips = [
     {
       id: 1,
       destination: 'Switzerland Alps',
-      image: '🏔️',
+      image: '🏔️',                    // Emoji representation
       duration: '7 days',
       budget: '₹4,50,000',
-      status: 'Planning'
+      status: 'Planning'               // Current planning status
     },
     {
       id: 2,
@@ -83,7 +113,7 @@ export default function UserProfile() {
       image: '🏖️',
       duration: '5 days',
       budget: '₹3,20,000',
-      status: 'Booked'
+      status: 'Booked'                 // Trip is confirmed/booked
     },
     {
       id: 3,
@@ -95,15 +125,16 @@ export default function UserProfile() {
     }
   ];
 
+  // Previous trips data - completed trips with ratings
   const previousTrips = [
     {
       id: 1,
       destination: 'Paris',
-      image: '🇫🇷',
+      image: '🇫🇷',                    // Country flag emoji
       duration: '6 days',
       budget: '₹3,80,000',
-      rating: 5,
-      year: '2024'
+      rating: 5,                       // User rating out of 5 stars
+      year: '2024'                     // Year trip was completed
     },
     {
       id: 2,
@@ -124,18 +155,22 @@ export default function UserProfile() {
       year: '2023'
     }
   ];
+  // Profile editing state - copy of user profile for editing
   const [editProfile, setEditProfile] = useState<UserProfile>(userProfile);
+  
+  // Active tab in profile modal (info, preplanned trips, previous trips)
   const [activeProfileTab, setActiveProfileTab] = useState<'info' | 'preplanned' | 'previous'>('info');
 
+  // Upcoming trips data - future planned trips with detailed information
   const upcomingTrips: Trip[] = [
     {
       id: 1,
       destination: 'European Grand Tour',
-      cities: ['Paris', 'Rome', 'Barcelona'],
+      cities: ['Paris', 'Rome', 'Barcelona'], // Multi-city itinerary
       dates: 'Dec 15 - 28, 2025',
       budget: '₹3,50,000',
-      status: 'Planning',
-      progress: 75,
+      status: 'Planning',                      // Still in planning phase
+      progress: 75,                           // 75% planning complete
       image: '🇫🇷'
     },
     {
@@ -144,12 +179,13 @@ export default function UserProfile() {
       cities: ['Tokyo', 'Kyoto', 'Osaka'],
       dates: 'Mar 8 - 22, 2026',
       budget: '₹3,15,000',
-      status: 'Booked',
-      progress: 100,
+      status: 'Booked',                       // Trip is confirmed
+      progress: 100,                          // Planning complete
       image: '🇯🇵'
     }
   ];
 
+  // Past trips data - completed trips for reference
   const pastTrips: Trip[] = [
     {
       id: 3,
@@ -157,8 +193,8 @@ export default function UserProfile() {
       cities: ['Bangkok', 'Phuket', 'Chiang Mai'],
       dates: 'Jan 10 - 24, 2024',
       budget: '₹2,33,000',
-      status: 'Completed',
-      progress: 100,
+      status: 'Completed',                     // Trip has been completed
+      progress: 100,                          // Always 100% for completed trips
       image: '🇹🇭'
     },
     {
@@ -173,6 +209,7 @@ export default function UserProfile() {
     }
   ];
 
+  // Shared trips data - trips planned with friends or groups
   const sharedTrips: Trip[] = [
     {
       id: 5,
@@ -180,8 +217,8 @@ export default function UserProfile() {
       cities: ['Ubud', 'Seminyak', 'Canggu'],
       dates: 'Aug 15 - 29, 2025',
       budget: '₹2,00,000',
-      status: 'Planning',
-      progress: 60,
+      status: 'Planning',                      // Group is still planning
+      progress: 60,                           // 60% planning complete
       image: '🇮🇩'
     },
     {
@@ -190,12 +227,13 @@ export default function UserProfile() {
       cities: ['Marrakech', 'Fez', 'Casablanca'],
       dates: 'Nov 3 - 17, 2025',
       budget: '₹2,58,000',
-      status: 'Booked',
-      progress: 90,
+      status: 'Booked',                       // Group trip is confirmed
+      progress: 90,                           // Nearly complete planning
       image: '🇲🇦'
     }
   ];
 
+  // Popular destinations data - trending travel locations with statistics
   const popularDestinations: Destination[] = [
     { name: 'Santorini', country: 'Greece', rating: 4.9, trips: 1245, image: '🏝️' },
     { name: 'Bali', country: 'Indonesia', rating: 4.8, trips: 2341, image: '🌺' },
@@ -205,45 +243,63 @@ export default function UserProfile() {
     { name: 'Tuscany', country: 'Italy', rating: 4.7, trips: 1654, image: '🍷' }
   ];
 
+  // Recent activities data - user's recent actions on the platform
   const recentActivities: Activity[] = [
     { action: 'Added new stop', location: 'Venice', time: '2 hours ago', icon: MapPin },
     { action: 'Updated budget', location: 'European Trip', time: '5 hours ago', icon: () => <span className="text-teal-400 font-bold">₹</span> },
     { action: 'Shared itinerary', location: 'Japan Adventure', time: '1 day ago', icon: Users }
   ];
 
+  // Travel statistics - aggregated user travel data
   const travelStats: TravelStats = {
-    tripsPlanned: 12,
-    citiesVisited: 28,
-    totalBudget: '₹20,50,000'
+    tripsPlanned: 12,                         // Total trips planned by user
+    citiesVisited: 28,                       // Total unique cities visited
+    totalBudget: '₹20,50,000'                // Total budget across all trips
   };
 
+  // ============================================================================
+  // UTILITY FUNCTIONS - Helper functions for component logic
+  // ============================================================================
+  
+  // Returns appropriate Tailwind CSS classes based on trip status
   const getStatusColor = (status: Trip['status']): string => {
     switch (status) {
       case 'Booked':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 text-green-700';   // Green for confirmed trips
       case 'Completed':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 text-blue-700';     // Blue for completed trips
       default:
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-yellow-100 text-yellow-700'; // Yellow for planning status
     }
   };
 
+  // ============================================================================
+  // EVENT HANDLERS - Functions that handle user interactions
+  // ============================================================================
+  
+  // Handles tab switching for trip categories
   const handleTabChange = (tab: TabType): void => {
     setActiveTab(tab);
   };
 
+  // Navigates to trip planning page
   const handlePlanNewTrip = (): void => {
     window.location.href = '/plan-trip';
   };
 
+  // Handles trip card clicks (placeholder for navigation)
   const handleTripClick = (tripId: number): void => {
     console.log(`Navigate to trip ${tripId}`);
+    // TODO: Implement navigation to trip details page
   };
 
+  // Handles destination card clicks (placeholder for navigation)
   const handleDestinationClick = (destination: string): void => {
     console.log(`Navigate to ${destination}`);
+    // TODO: Implement navigation to destination details page
   };
 
+  // Returns appropriate trip array based on active tab
   const getCurrentTrips = (): Trip[] => {
     switch (activeTab) {
       case 'past':
@@ -255,21 +311,29 @@ export default function UserProfile() {
     }
   };
 
+  // Saves profile changes and exits edit mode
   const handleProfileSave = () => {
     setUserProfile(editProfile);
     setIsEditing(false);
   };
 
+  // Cancels profile editing and reverts changes
   const handleProfileCancel = () => {
     setEditProfile(userProfile);
     setIsEditing(false);
   };
 
+  // ============================================================================
+  // COMPONENT RENDER - JSX structure and UI elements
+  // ============================================================================
   return (
     <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
-      {/* Header */}
+      {/* ========================================================================
+          HEADER SECTION - Top navigation bar with branding and user actions
+          ======================================================================== */}
       <header className="bg-slate-900 px-4 sm:px-6 py-4 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Brand logo and title */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-400 rounded-full flex items-center justify-center">
               <Globe className="w-4 h-4 sm:w-6 sm:h-6 text-slate-900" />
@@ -280,7 +344,9 @@ export default function UserProfile() {
             </div>
           </div>
           
+          {/* Header action buttons */}
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Plan new trip button with responsive text */}
             <button 
               className="px-3 py-2 sm:px-6 sm:py-2 bg-yellow-400 text-slate-900 rounded-lg font-semibold transition-all duration-200 hover:shadow-lg hover:bg-yellow-300 transform hover:-translate-y-0.5 text-sm sm:text-base"
               onClick={handlePlanNewTrip}
@@ -290,6 +356,7 @@ export default function UserProfile() {
               <span className="hidden sm:inline">Plan New Trip</span>
               <span className="sm:hidden">Plan</span>
             </button>
+            {/* User avatar button to open profile modal */}
             <div 
               className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center cursor-pointer hover:shadow-lg transition-all"
               onClick={() => setShowProfile(true)}
@@ -300,8 +367,11 @@ export default function UserProfile() {
         </div>
       </header>
 
+      {/* ========================================================================
+          MAIN CONTENT AREA - Dashboard content with responsive layout
+          ======================================================================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Welcome Section */}
+        {/* Welcome message with personalized greeting */}
         <div className="mb-6 sm:mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-slate-900">
             Welcome back, {userProfile.name.split(' ')[0]}! ✈️
@@ -311,13 +381,18 @@ export default function UserProfile() {
           </p>
         </div>
 
+        {/* Responsive grid layout: single column on mobile, 3-column on desktop */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Left Column - Main Content */}
+          {/* ====================================================================
+              LEFT COLUMN - Main dashboard content (trips and destinations)
+              ==================================================================== */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8">
-            {/* Trip Overview Cards */}
+            {/* Trip management section with tabbed interface */}
             <div>
+              {/* Section header with tab navigation */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
                 <h3 className="text-lg sm:text-xl font-bold text-slate-900">Your Trips</h3>
+                {/* Tab buttons for trip categories */}
                 <div className="flex space-x-1 sm:space-x-2 overflow-x-auto">
                   {(['upcoming', 'past', 'shared'] as const).map((tab) => (
                     <button
@@ -325,8 +400,8 @@ export default function UserProfile() {
                       onClick={() => handleTabChange(tab)}
                       className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium transition-all text-sm sm:text-base whitespace-nowrap ${
                         activeTab === tab 
-                          ? 'bg-slate-900 text-white' 
-                          : 'text-gray-600 hover:bg-gray-100'
+                          ? 'bg-slate-900 text-white'     // Active tab styling
+                          : 'text-gray-600 hover:bg-gray-100' // Inactive tab styling
                       }`}
                       type="button"
                     >
@@ -336,14 +411,16 @@ export default function UserProfile() {
                 </div>
               </div>
 
+              {/* Trip cards container */}
               <div className="space-y-4">
                 {getCurrentTrips().map((trip: Trip) => (
+                  /* Individual trip card with hover effects and accessibility */
                   <div 
                     key={trip.id} 
                     className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group"
                     onClick={() => handleTripClick(trip.id)}
-                    role="button"
-                    tabIndex={0}
+                    role="button"                    // Accessibility: indicates clickable element
+                    tabIndex={0}                     // Accessibility: keyboard navigation
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         handleTripClick(trip.id);
