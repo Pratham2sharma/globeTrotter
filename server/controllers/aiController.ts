@@ -39,7 +39,7 @@ export const generateBudgetSuggestion = async (tripId: string) => {
     );
 
     const savedSuggestion = await AIBudgetSuggestion.create({
-      userId: trip.userId,
+      userId: trip.userId.toString(),
       tripId,
       destination: trip.destination,
       totalBudget: suggestion.totalBudget,

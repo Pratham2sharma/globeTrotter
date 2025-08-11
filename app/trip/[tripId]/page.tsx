@@ -40,7 +40,7 @@ export default function TripPage() {
     destination: "",
     startDate: "",
     endDate: "",
-    budget: "",
+    budget: "", 
     preferences: [],
     activities: [],
     isInternational: false,
@@ -148,6 +148,7 @@ export default function TripPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-user-id": user?.id || 'anonymous-user',
         },
         body: JSON.stringify(tripData),
       });
@@ -720,13 +721,18 @@ export default function TripPage() {
                     ← Previous
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ scale: savedTripId ? 1 : 1.05 }}
+                    whileTap={{ scale: savedTripId ? 1 : 0.95 }}
                     onClick={handleCreateTrip}
-                    disabled={loading || !validateDates()}
+                    disabled={loading || !validateDates() || savedTripId !== null}
                     className="px-8 py-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {loading ? (
+                    {savedTripId ? (
+                      <>
+                        <Save className="w-5 h-5" />
+                        Trip Created ✓
+                      </>
+                    ) : loading ? (
                       <>
                         <motion.div
                           animate={{ rotate: 360 }}
@@ -775,6 +781,24 @@ export default function TripPage() {
                 </p>
               </div>
               <AIBudgetSuggestion tripId={savedTripId} />
+              
+              {/* Go to Profile Button */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1, duration: 0.6 }}
+                className="text-center mt-8"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/profile')}
+                  className="px-8 py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 mx-auto"
+                >
+                  <Users className="w-5 h-5" />
+                  Go to Profile
+                </motion.button>
+              </motion.div>
             </motion.div>
           )}
         </motion.div>

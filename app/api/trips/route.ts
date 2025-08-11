@@ -20,8 +20,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get user ID from headers (passed from frontend)
+    const userId = request.headers.get('x-user-id') || 'anonymous-user';
+    
     const tripData = {
-      userId: 'temp-user-id',
+      userId,
       destination,
       startDate: new Date(startDate),
       endDate: new Date(endDate),

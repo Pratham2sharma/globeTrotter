@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY!;
+const WEATHER_API_KEY = process.env.WEATHER_API_KEY!;
 
 // Calendar-aware seasonal data
 const seasonalData = {
@@ -65,6 +66,49 @@ export class AIService {
       bestBookingTime: isPeakSeason ? '2-3 months in advance' : '2-4 weeks in advance'
     };
   }
+  // Get real weather forecast using WeatherAPI.com (free, no credit card)
+  private async getWeatherForecast(destination: string, startDate: string) {
+    try {
+      const response = await axios.get(
+        `https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=${destination}&days=3&aqi=no&alerts=no`
+      );
+      
+      const current = response.data.current;
+      const forecast = response.data.forecast.forecastday[0];
+      
+      return {
+        condition: current.condition.text.toLowerCase(),
+        description: current.condition.text,
+        temperature: Math.round(current.temp_c),
+        humidity: current.humidity,
+        tips: this.getWeatherBasedTips(current.condition.text, current.temp_c, current.humidity)
+      };
+    } catch (error) {
+      console.error('Weather API error:', error);
+      return null;
+    }
+  }
+
+  private getWeatherBasedTips(condition: string, temp: number, humidity: number): string[] {
+    const tips = [];
+    
+    if (temp > 30) {
+      tips.push('Carry sunscreen and hats', 'Stay hydrated - drink plenty of water', 'Plan activities for early morning/evening');
+    } else if (temp < 15) {
+      tips.push('Pack warm clothes and layers', 'Carry a waterproof jacket');
+    }
+    
+    if (condition.includes('rain')) {
+      tips.push('Pack waterproof gear and umbrella', 'Indoor activities recommended');
+    }
+    
+    if (humidity > 70) {
+      tips.push('Light, breathable clothing recommended', 'Stay in air-conditioned spaces during peak hours');
+    }
+    
+    return tips.length > 0 ? tips : ['Check local weather before activities'];
+  }
+
   // Get seasonal recommendations based on travel dates
   private getSeasonalRecommendations(startDate: string, destination: string) {
     const month = new Date(startDate).getMonth() + 1;
@@ -300,7 +344,8 @@ export class AIService {
     const attractions = await this.searchPopularPlaces(destination, 'attractions');
     const restaurants = await this.searchPopularPlaces(destination, 'restaurants');
     
-    // Get seasonal information for calendar-aware planning
+    // Get real weather forecast and seasonal information
+    const weatherForecast = await this.getWeatherForecast(destination, startDate || '');
     const seasonalInfo = startDate ? this.getSeasonalRecommendations(startDate, destination) : null;
     
     // Use HuggingFace AI to structure the itinerary intelligently
@@ -319,7 +364,7 @@ export class AIService {
         locations: this.getSmartLocationsByDay(destination, i + 1, attractions, preferences, isWeekend),
         activities: this.getSmartActivitiesByDay(destination, i + 1, preferences, restaurants, seasonalInfo),
         estimatedCost: dailyBudget,
-        weatherTips: seasonalInfo?.tips.slice(0, 2) || [],
+        weatherTips: weatherForecast?.tips.slice(0, 3) || seasonalInfo?.tips.slice(0, 2) || [],
         description: this.getAIGeneratedDescription(destination, i + 1, preferences, seasonalInfo)
       };
     });
