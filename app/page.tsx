@@ -130,12 +130,20 @@ export default function Home() {
                 </motion.a>
               ))}
               <motion.a
-                href="/userprofile"
+                href="/login"
+                whileHover={{ y: -3, color: "#14b8a6" }}
+                transition={{ duration: 0.3 }}
+                className="text-gray-300 font-medium tracking-wide px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                Login
+              </motion.a>
+              <motion.a
+                href="/register"
                 whileHover={sophisticatedHover}
                 whileTap={{ scale: 0.98 }}
                 className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-6 py-3 rounded-full font-semibold shadow-lg"
               >
-                Profile
+                Sign Up
               </motion.a>
             </motion.div>
 
@@ -193,11 +201,21 @@ export default function Home() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.3 }}
+                    whileHover={{ x: 10, color: "#14b8a6" }}
+                    href="/login"
+                    className="block text-gray-300 font-medium py-2"
+                  >
+                    Login
+                  </motion.a>
+                  <motion.a
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.4 }}
                     whileHover={{ scale: 1.05 }}
-                    href="/userprofile"
+                    href="/register"
                     className="block bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-4 py-3 rounded-full font-semibold text-center"
                   >
-                    My Journey
+                    Sign Up
                   </motion.a>
                 </div>
               </motion.div>
