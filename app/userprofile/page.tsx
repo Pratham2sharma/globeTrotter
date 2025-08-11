@@ -1,8 +1,7 @@
-
 "use client"
 
 import React, { useState } from 'react';
-import { Calendar, MapPin, DollarSign, Users, Plus, Globe, Star, Clock, ArrowRight, Plane, Camera, Coffee } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, Globe, Star, Clock, ArrowRight, Plane, Camera, Coffee } from 'lucide-react';
 
 // Type definitions
 interface Trip {
@@ -39,7 +38,7 @@ interface TravelStats {
 
 type TabType = 'upcoming' | 'past' | 'shared';
 
-const GlobeTrotterDashboard: React.FC = () => {
+export default function UserProfile() {
   const [activeTab, setActiveTab] = useState<TabType>('upcoming');
 
   const upcomingTrips: Trip[] = [
@@ -48,7 +47,7 @@ const GlobeTrotterDashboard: React.FC = () => {
       destination: 'European Grand Tour',
       cities: ['Paris', 'Rome', 'Barcelona'],
       dates: 'Dec 15 - 28, 2025',
-      budget: '$4,200',
+      budget: '₹3,50,000',
       status: 'Planning',
       progress: 75,
       image: '🇫🇷'
@@ -58,7 +57,7 @@ const GlobeTrotterDashboard: React.FC = () => {
       destination: 'Japan Adventure',
       cities: ['Tokyo', 'Kyoto', 'Osaka'],
       dates: 'Mar 8 - 22, 2026',
-      budget: '$3,800',
+      budget: '₹3,15,000',
       status: 'Booked',
       progress: 100,
       image: '🇯🇵'
@@ -71,7 +70,7 @@ const GlobeTrotterDashboard: React.FC = () => {
       destination: 'Thailand Explorer',
       cities: ['Bangkok', 'Phuket', 'Chiang Mai'],
       dates: 'Jan 10 - 24, 2024',
-      budget: '$2,800',
+      budget: '₹2,33,000',
       status: 'Completed',
       progress: 100,
       image: '🇹🇭'
@@ -81,7 +80,7 @@ const GlobeTrotterDashboard: React.FC = () => {
       destination: 'Iceland Adventure',
       cities: ['Reykjavik', 'Blue Lagoon'],
       dates: 'Sep 5 - 12, 2023',
-      budget: '$3,200',
+      budget: '₹2,66,000',
       status: 'Completed',
       progress: 100,
       image: '🇮🇸'
@@ -94,7 +93,7 @@ const GlobeTrotterDashboard: React.FC = () => {
       destination: 'Bali Group Trip',
       cities: ['Ubud', 'Seminyak', 'Canggu'],
       dates: 'Aug 15 - 29, 2025',
-      budget: '$2,400',
+      budget: '₹2,00,000',
       status: 'Planning',
       progress: 60,
       image: '🇮🇩'
@@ -104,7 +103,7 @@ const GlobeTrotterDashboard: React.FC = () => {
       destination: 'Morocco with Friends',
       cities: ['Marrakech', 'Fez', 'Casablanca'],
       dates: 'Nov 3 - 17, 2025',
-      budget: '$3,100',
+      budget: '₹2,58,000',
       status: 'Booked',
       progress: 90,
       image: '🇲🇦'
@@ -122,14 +121,14 @@ const GlobeTrotterDashboard: React.FC = () => {
 
   const recentActivities: Activity[] = [
     { action: 'Added new stop', location: 'Venice', time: '2 hours ago', icon: MapPin },
-    { action: 'Updated budget', location: 'European Trip', time: '5 hours ago', icon: DollarSign },
+    { action: 'Updated budget', location: 'European Trip', time: '5 hours ago', icon: () => <span className="text-teal-400 font-bold">₹</span> },
     { action: 'Shared itinerary', location: 'Japan Adventure', time: '1 day ago', icon: Users }
   ];
 
   const travelStats: TravelStats = {
     tripsPlanned: 12,
     citiesVisited: 28,
-    totalBudget: '$24,600'
+    totalBudget: '₹20,50,000'
   };
 
   const getStatusColor = (status: Trip['status']): string => {
@@ -148,17 +147,14 @@ const GlobeTrotterDashboard: React.FC = () => {
   };
 
   const handlePlanNewTrip = (): void => {
-    // TODO: Implement navigation to trip planning page
     console.log('Navigate to new trip planning');
   };
 
   const handleTripClick = (tripId: number): void => {
-    // TODO: Implement navigation to trip details
     console.log(`Navigate to trip ${tripId}`);
   };
 
   const handleDestinationClick = (destination: string): void => {
-    // TODO: Implement navigation to destination details
     console.log(`Navigate to ${destination}`);
   };
 
@@ -174,7 +170,7 @@ const GlobeTrotterDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" suppressHydrationWarning>
       {/* Header */}
       <header className="bg-slate-900 px-4 sm:px-6 py-4 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -278,7 +274,7 @@ const GlobeTrotterDashboard: React.FC = () => {
                         
                         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 mb-4 gap-2 sm:gap-0">
                           <div className="flex items-center space-x-2">
-                            <DollarSign className="w-4 h-4 text-teal-400" />
+                            <span className="text-teal-400 font-bold text-base">₹</span>
                             <span className="font-semibold text-gray-600">
                               {trip.budget}
                             </span>
@@ -404,7 +400,7 @@ const GlobeTrotterDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <DollarSign className="w-4 h-4 text-teal-400" />
+                    <span className="text-teal-400 font-bold text-sm">₹</span>
                     <span className="text-sm text-gray-600">Total Budget</span>
                   </div>
                   <span className="font-bold text-slate-900">{travelStats.totalBudget}</span>
@@ -473,6 +469,4 @@ const GlobeTrotterDashboard: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default GlobeTrotterDashboard;
+}
