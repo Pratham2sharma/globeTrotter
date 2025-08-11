@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ITrip extends Document {
-  userId: mongoose.Types.ObjectId;
+  userId: string | mongoose.Types.ObjectId;
   destination: string;
   startDate: Date;
   endDate: Date;
@@ -14,7 +14,7 @@ export interface ITrip extends Document {
   status: 'planning' | 'booked' | 'completed' | 'cancelled';
   coverPhoto?: string;
   isInternational: boolean;
-  coverImageFile?: string; // Path to uploaded image file
+  coverImageFile?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,8 +22,7 @@ export interface ITrip extends Document {
 const tripSchema: Schema<ITrip> = new Schema(
   {
     userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: Schema.Types.Mixed,
       required: true,
     },
     destination: {

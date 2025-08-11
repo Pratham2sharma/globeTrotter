@@ -1,32 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Trip from '@/server/model/Tripcreate';
 import { connectDB } from '@/server/lib/db';
+import mongoose from 'mongoose';
 
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
     
     const body = await request.json();
+    console.log('Received trip data:', body);
+    
     const { destination, startDate, endDate, travelers, budget, preferences = [], activities = [], isInternational = false } = body;
 
-    const trip = await Trip.create({
+    // Validate required fields
+    if (!destination || !startDate || !endDate || !budget) {
+      return NextResponse.json(
+        { message: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    const tripData = {
       userId: 'temp-user-id',
       destination,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      travelers,
+      travelers: travelers || 1,
       budget,
       preferences,
       activities,
       isInternational,
-      status: 'planning'
-    });
+      status: 'planning' as const
+    };
+    
+    console.log('Creating trip with data:', tripData);
+    const trip = await Trip.create(tripData);
+    console.log('Trip created successfully:', trip._id);
 
     return NextResponse.json(trip);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Trip creation error:', error);
+    console.error('Error details:', error.message);
     return NextResponse.json(
-      { message: 'Failed to create trip' },
+      { message: 'Failed to create trip', error: error.message },
       { status: 500 }
     );
   }
