@@ -5,7 +5,6 @@ import Footer from "./components/Footer";
 import { useEffect } from "react";
 import type SmoothScroll from "smooth-scroll";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

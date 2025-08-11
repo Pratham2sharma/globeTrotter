@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { connectDB } from "./lib/db.js";
 import tripRoutes from "./routes/tripRoutes.js";
+import authRoute from "./routes/authRoute.js";
 import itineraryRoutes from "./routes/itineraryRoutes.js";
 // Load environment variables before using them
 dotenv.config();
@@ -19,8 +20,8 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 //app.use(cookieParser());
 
-//app.use("/api/auth", authRoute);
-app.use("/api/trip", tripRoutes);
+app.use("/api/auth", authRoute);
+app.use("/api/trips", tripRoutes);
 app.use("/api/itineraries", itineraryRoutes);
 
 app.listen(PORT, () => {

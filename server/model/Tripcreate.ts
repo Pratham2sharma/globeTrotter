@@ -1,18 +1,29 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ITrip extends Document {
-  tripName: string;
+  userId: string;
+  destination: string;
   startDate: Date;
   endDate: Date;
-  description: string;
-  coverPhoto?: string; // optional
+  travelers: number;
+  budget: string;
+  preferences: string[];
+  accommodation: string;
+  transportation: string;
+  activities: string[];
+  status: string;
+  coverPhoto?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const tripSchema: Schema<ITrip> = new Schema(
   {
-    tripName: {
+    userId: {
+      type: String,
+      required: true,
+    },
+    destination: {
       type: String,
       required: true,
       trim: true,
@@ -25,13 +36,38 @@ const tripSchema: Schema<ITrip> = new Schema(
       type: Date,
       required: true,
     },
-    description: {
+    travelers: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    budget: {
       type: String,
       required: true,
-      trim: true,
+    },
+    preferences: {
+      type: [String],
+      default: [],
+    },
+    accommodation: {
+      type: String,
+      default: "",
+    },
+    transportation: {
+      type: String,
+      default: "",
+    },
+    activities: {
+      type: [String],
+      default: [],
+    },
+    status: {
+      type: String,
+      enum: ["planning", "booked", "completed", "cancelled"],
+      default: "planning",
     },
     coverPhoto: {
-      type: String, // URL/path
+      type: String,
       default: null,
     },
   },
