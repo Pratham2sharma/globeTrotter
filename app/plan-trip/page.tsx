@@ -3,11 +3,9 @@
 // ============================================================================
 // IMPORTS - External dependencies and Next.js utilities
 // ============================================================================
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Users, DollarSign, Plane, Clock, Star, Check } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import ValidationToast from '../../components/ValidationToast';
-import { validateDestination, validateTripDuration, validateTravelers, getDateValidation } from '../../lib/validation';
+import React, { useState } from 'react';
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Users, DollarSign, Plane, Star, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 // ============================================================================
 // TYPE DEFINITIONS - Interface definitions for type safety
@@ -42,8 +40,7 @@ export default function PlanTrip() {
   // ============================================================================
   
   const router = useRouter();                    // Next.js router for navigation
-  const searchParams = useSearchParams();
-  const [currentStep, setCurrentStep] = useState(1); // Current wizard step (1-4)
+  const [currentStep, setCurrentStep] = useState(1); // Current wizard step (1-3)
   
   // Main trip data state - accumulates user selections across steps
   const [tripData, setTripData] = useState<TripData>({
@@ -56,15 +53,7 @@ export default function PlanTrip() {
     interests: []          // Empty array for multi-select interests
   });
   
-  const [toast, setToast] = useState({ show: false, message: '', type: 'error' as 'error' | 'success' });
 
-  // Handle URL parameters for pre-filled destination
-  useEffect(() => {
-    const destination = searchParams.get('destination');
-    if (destination) {
-      setTripData(prev => ({ ...prev, destination: decodeURIComponent(destination) }));
-    }
-  }, [searchParams]);
 
   // ============================================================================
   // STATIC DATA - Configuration data for form options
@@ -277,8 +266,7 @@ export default function PlanTrip() {
                   type="date"
                   value={tripData.startDate}
                   onChange={(e) => setTripData({ ...tripData, startDate: e.target.value })}
-                  min={getDateValidation().min}
-                  max={getDateValidation().max}
+                  min={new Date().toISOString().split('T')[0]}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-transparent"
                 />
               </div>
@@ -293,11 +281,7 @@ export default function PlanTrip() {
                   type="date"
                   value={tripData.endDate}
                   onChange={(e) => setTripData({ ...tripData, endDate: e.target.value })}
-                  min={tripData.startDate || getDateValidation().min}
-                  max={tripData.startDate ? 
-                    new Date(new Date(tripData.startDate).getTime() + 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] :
-                    getDateValidation().max
-                  }
+                  min={tripData.startDate || new Date().toISOString().split('T')[0]}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-transparent"
                 />
               </div>
@@ -507,12 +491,7 @@ export default function PlanTrip() {
         </div>
       </div>
       
-      <ValidationToast
-        message={toast.message}
-        type={toast.type}
-        isVisible={toast.show}
-        onClose={() => setToast(prev => ({ ...prev, show: false }))}
-      />
+
     </div>
   );
 }
