@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   useEffect(() => {
-    let scroll: any;
+    let scroll: SmoothScroll | undefined;
     import("smooth-scroll").then(({ default: SmoothScroll }) => {
       scroll = new SmoothScroll('a[href*="#"]', {
         speed: 600,
