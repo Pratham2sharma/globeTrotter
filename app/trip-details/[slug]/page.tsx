@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, Star, MapPin, Calendar } from "lucide-react";
 import Image from "next/image";
+import Navbar from "../../components/Navbar";
 
 export default function TripDetails({ params }: { params: { slug: string } }) {
   const tripData = {
@@ -21,6 +22,7 @@ export default function TripDetails({ params }: { params: { slug: string } }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}

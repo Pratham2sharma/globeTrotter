@@ -4,8 +4,9 @@
 // IMPORTS - External dependencies and Next.js utilities
 // ============================================================================
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Users, DollarSign, Plane, Star, Check } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Users, DollarSign, Plane, Star, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Navbar from '../components/Navbar';
 
 // ============================================================================
 // TYPE DEFINITIONS - Interface definitions for type safety
@@ -41,18 +42,18 @@ export default function PlanTrip() {
   // ============================================================================
   
   const router = useRouter();                    // Next.js router for navigation
-  const [currentStep, setCurrentStep] = useState(1); // Current wizard step (1-3)
+  const [currentStep, setCurrentStep] = useState(1);
   
-  // Main trip data state - accumulates user selections across steps
+
   const [tripData, setTripData] = useState<TripData>({
     destination: '',
     startDate: '',
     endDate: '',
-    travelers: 1,          // Default to 1 traveler
+    travelers: 1,
     budget: '',
     travelStyle: '',
-    interests: [],         // Empty array for multi-select interests
-    coverImage: null       // No image selected initially
+    interests: [],
+    coverImage: null
   });
   
 
@@ -440,25 +441,8 @@ export default function PlanTrip() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-slate-900 px-4 sm:px-6 py-4 shadow-lg">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center space-x-2 text-white hover:text-yellow-400 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back</span>
-          </button>
-          
-          <div className="flex items-center space-x-3">
-            <Plane className="w-6 h-6 text-yellow-400" />
-            <h1 className="text-xl font-bold text-white">Plan New Trip</h1>
-          </div>
-          
-          <div className="w-16" />
-        </div>
-      </header>
+      <Navbar />
+
 
       {/* Progress Bar */}
       <div className="bg-white border-b">

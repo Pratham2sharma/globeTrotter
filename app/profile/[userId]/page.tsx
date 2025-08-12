@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MapPin, Mail, Phone, Calendar, Plus, Globe, Trash2, Check } from "lucide-react";
+import { MapPin, Mail, Phone, Calendar, Trash2, Check } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuthStore } from "../../../store/authStore";
+import Navbar from "../../components/Navbar";
 
 interface UserProfile {
   firstName: string;
@@ -26,6 +27,8 @@ interface TripCard {
   status: string;
   rating?: number;
   year?: string;
+  preferences?: string[];
+  activities?: string[];
 }
 
 export default function DynamicUserProfile() {
@@ -36,7 +39,21 @@ export default function DynamicUserProfile() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [prePlannedTrips, setPrePlannedTrips] = useState<TripCard[]>([]);
   const [previousTrips, setPreviousTrips] = useState<TripCard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<TripCard | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editTrip, setEditTrip] = useState<TripCard | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    destination: '',
+    budget: '',
+    startDate: '',
+    endDate: '',
+    travelers: 1,
+    preferences: [] as string[],
+    activities: [] as string[]
+  });
+  const [loading, setLoading] = useState(false);
 
   const getDestinationEmoji = (destination: string) => {
     const emojiMap: { [key: string]: string } = {
@@ -60,16 +77,16 @@ export default function DynamicUserProfile() {
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-    } else {
+    if (user) {
       fetchUserData();
+    } else if (user === null) {
+      setIsInitialized(true);
+      router.push("/login");
     }
   }, [user, router, userId]);
 
   const fetchUserData = async () => {
     try {
-      setLoading(true);
       
       // Fetch user profile by userId
       const profileResponse = await fetch(`http://localhost:5000/api/auth/profile/${userId}`, {
@@ -178,18 +195,11 @@ export default function DynamicUserProfile() {
         },
       ]);
     } finally {
-      setLoading(false);
+      setIsInitialized(true);
     }
   };
 
-  const handlePlanNewTrip = () => {
-    router.push('/trip/new');
-  };
 
-  const handleLogout = async () => {
-    await logout();
-    router.push('/');
-  };
 
   const handleDeleteTrip = async (tripId: number) => {
     if (!confirm('Are you sure you want to delete this trip?')) return;
@@ -245,7 +255,7 @@ export default function DynamicUserProfile() {
 
   const isOwnProfile = user?.id === userId || userId === 'current';
 
-  if (!user || loading) {
+  if (!isInitialized || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -258,35 +268,8 @@ export default function DynamicUserProfile() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-slate-900 px-4 sm:px-6 py-4 shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
-              <Globe className="w-6 h-6 text-slate-900" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">GlobeTrotter</h1>
-              <p className="text-sm text-teal-300">Premium Travel Planning</p>
-            </div>
-          </div>
+      <Navbar />
 
-          <div className="flex items-center space-x-3">
-            <button
-              className="px-6 py-2 bg-yellow-400 text-slate-900 rounded-lg font-semibold hover:bg-yellow-300 transition-colors"
-              onClick={handlePlanNewTrip}
-            >
-              <Plus className="w-4 h-4 inline mr-2" />
-              Plan New Trip
-            </button>
-            <button
-              className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8">
@@ -386,7 +369,28 @@ export default function DynamicUserProfile() {
                 </div>
                 <div className="flex gap-2 mt-4">
                   <button
-                    onClick={() => router.push(`/trip/${trip.id}`)}
+                    onClick={() => {
+                      if (trip.status === "Planning") {
+                        setEditTrip(trip);
+                        // Fetch full trip data
+                        fetch(`/api/trips/${trip.id}`)
+                          .then(res => res.json())
+                          .then(data => {
+                            setEditForm({
+                              destination: data.destination || '',
+                              budget: data.budget || '',
+                              startDate: data.startDate?.split('T')[0] || '',
+                              endDate: data.endDate?.split('T')[0] || '',
+                              travelers: data.travelers || 1,
+                              preferences: data.preferences || [],
+                              activities: data.activities || []
+                            });
+                          });
+                        setShowEditModal(true);
+                      } else {
+                        router.push(`/trip/${trip.id}`);
+                      }
+                    }}
                     className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
                       trip.status === "Planning"
                         ? "bg-yellow-400 text-slate-900 hover:bg-yellow-300"
@@ -459,16 +463,242 @@ export default function DynamicUserProfile() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => router.push(`/trip/${trip.id}`)}
+                  onClick={() => {
+                    setSelectedTrip(trip);
+                    setShowModal(true);
+                  }}
                   className="w-full mt-4 px-4 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
                 >
-                  View Trip
+                  View Details
                 </button>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Trip Details Modal */}
+      {showModal && selectedTrip && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Trip Details</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <span className="text-4xl">{selectedTrip.image}</span>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">{selectedTrip.destination}</h3>
+                    <p className="text-gray-600">{selectedTrip.duration} • {selectedTrip.year}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-700 mb-2">Budget</h4>
+                    <p className="text-slate-900 font-medium">{selectedTrip.budget}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-700 mb-2">Rating</h4>
+                    <div className="flex items-center space-x-1">
+                      {[...Array(selectedTrip.rating)].map((_, i) => (
+                        <span key={i} className="text-yellow-400 text-lg">★</span>
+                      ))}
+                      <span className="ml-2 text-gray-600">({selectedTrip.rating}/5)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="w-full px-4 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Trip Modal */}
+      {showEditModal && editTrip && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">Edit Trip</h2>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Destination</label>
+                    <input
+                      type="text"
+                      value={editForm.destination}
+                      onChange={(e) => setEditForm({...editForm, destination: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Budget</label>
+                    <input
+                      type="text"
+                      value={editForm.budget}
+                      onChange={(e) => setEditForm({...editForm, budget: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input
+                      type="date"
+                      value={editForm.startDate}
+                      onChange={(e) => setEditForm({...editForm, startDate: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input
+                      type="date"
+                      value={editForm.endDate}
+                      onChange={(e) => setEditForm({...editForm, endDate: e.target.value})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Travelers</label>
+                    <select
+                      value={editForm.travelers}
+                      onChange={(e) => setEditForm({...editForm, travelers: parseInt(e.target.value)})}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    >
+                      {[1,2,3,4,5,6,7,8].map(num => (
+                        <option key={num} value={num}>{num} {num === 1 ? 'Traveler' : 'Travelers'}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Preferences</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {['Adventure', 'Relaxation', 'Culture', 'Food', 'Nature', 'History'].map(pref => (
+                      <button
+                        key={pref}
+                        type="button"
+                        onClick={() => {
+                          const newPrefs = editForm.preferences.includes(pref)
+                            ? editForm.preferences.filter(p => p !== pref)
+                            : [...editForm.preferences, pref];
+                          setEditForm({...editForm, preferences: newPrefs});
+                        }}
+                        className={`p-2 text-sm rounded-lg border transition-colors ${
+                          editForm.preferences.includes(pref)
+                            ? 'bg-teal-100 border-teal-500 text-teal-700'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pref}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Activities</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {['Sightseeing', 'Museums', 'Beach', 'Hiking', 'Photography', 'Local Tours'].map(activity => (
+                      <button
+                        key={activity}
+                        type="button"
+                        onClick={() => {
+                          const newActivities = editForm.activities.includes(activity)
+                            ? editForm.activities.filter(a => a !== activity)
+                            : [...editForm.activities, activity];
+                          setEditForm({...editForm, activities: newActivities});
+                        }}
+                        className={`p-2 text-sm rounded-lg border transition-colors ${
+                          editForm.activities.includes(activity)
+                            ? 'bg-blue-100 border-blue-500 text-blue-700'
+                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {activity}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => setShowEditModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        const response = await fetch(`/api/trips/${editTrip.id}`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            destination: editForm.destination,
+                            budget: editForm.budget,
+                            startDate: editForm.startDate,
+                            endDate: editForm.endDate,
+                            travelers: editForm.travelers,
+                            preferences: editForm.preferences,
+                            activities: editForm.activities,
+                            isInternational: !["india", "mumbai", "delhi", "chandigarh", "noida", "gurgaon", "bangalore", "chennai", "kolkata", "hyderabad", "pune", "ahmedabad", "jaipur", "goa", "kerala", "rajasthan", "kashmir", "himachal", "uttarakhand", "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh", "gujarat", "haryana", "jharkhand", "karnataka", "madhya pradesh", "maharashtra", "manipur", "meghalaya", "mizoram", "nagaland", "odisha", "punjab", "sikkim", "tamil nadu", "telangana", "tripura", "uttar pradesh", "west bengal", "andaman", "dadra", "daman", "lakshadweep", "puducherry", "agra", "allahabad", "amritsar", "aurangabad", "bhopal", "bhubaneswar", "coimbatore", "dehradun", "faridabad", "ghaziabad", "guwahati", "hubli", "indore", "jabalpur", "jammu", "jodhpur", "kanpur", "kochi", "lucknow", "ludhiana", "madurai", "mangalore", "meerut", "mysore", "nagpur", "nashik", "patna", "raipur", "rajkot", "ranchi", "salem", "shimla", "srinagar", "surat", "thiruvananthapuram", "tiruchirappalli", "udaipur", "vadodara", "varanasi", "vijayawada", "visakhapatnam", "rishikesh", "haridwar", "manali", "dharamshala", "ooty", "kodaikanal", "munnar", "alleppey", "varkala", "hampi", "pushkar", "mount abu", "darjeeling", "gangtok", "shillong", "imphal", "kohima", "aizawl"].some(place => editForm.destination.toLowerCase().includes(place))
+                          })
+                        });
+                        if (response.ok) {
+                          setShowEditModal(false);
+                          fetchUserData();
+                          alert('Trip updated successfully!');
+                        } else {
+                          alert('Failed to update trip');
+                        }
+                      } catch (error) {
+                        console.error('Error updating trip:', error);
+                        alert('Error updating trip');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                    disabled={loading}
+                  >
+                    {loading ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

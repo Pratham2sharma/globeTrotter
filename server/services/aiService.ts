@@ -53,7 +53,7 @@ export interface BudgetSuggestion {
 
 export class AIService {
   // Get seasonal pricing insights for better budget planning
-  private getSeasonalPricing(startDate: string, isInternational: boolean) {
+  private getSeasonalPricing(startDate: string) {
     const month = new Date(startDate).getMonth() + 1;
     const isPeakSeason = [12, 1, 4, 5, 10, 11].includes(month); // Peak tourist months
     

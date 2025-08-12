@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Search,
   Star,
   Clock,
   Users,
   MapPin,
-  ArrowLeft,
   Globe,
   Flag,
   IndianRupee,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Footer from '../components/Footer';
+import Navbar from '../components/Navbar';
 
 interface Activity {
   _id: string;
@@ -127,33 +128,8 @@ export default function ActivitySearch() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-slate-900 to-slate-800 px-4 sm:px-6 py-6 shadow-xl">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center space-x-2 text-white hover:text-yellow-400 transition-all duration-200 hover:scale-105"
-            suppressHydrationWarning
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back</span>
-          </button>
-          
-          <div className="flex items-center space-x-4">
-            <div className="p-2 bg-yellow-400 rounded-full">
-              <Globe className="w-6 h-6 text-slate-900" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Activity Search</h1>
-              <p className="text-yellow-300 text-sm">Discover amazing experiences</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Flag className="w-5 h-5 text-yellow-400" />
-            <span className="text-yellow-400 font-medium text-sm">🇮🇳 India</span>
-          </div>
-        </div>
-      </header>
+      <Navbar />
+
 
       <div className="bg-gradient-to-b from-white to-gray-50 border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -247,13 +223,19 @@ export default function ActivitySearch() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredActivities.map((activity) => (
                 <div key={activity._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
-                  {(activity.imageUrl || activity.cityId?.imageUrl) && (
-                    <div className="h-48 overflow-hidden">
-                      <img 
-                        src={activity.imageUrl || activity.cityId?.imageUrl} 
+                  {(activity.imageUrl || activity.cityId?.imageUrl) ? (
+                    <div className="h-48 overflow-hidden relative">
+                      <Image 
+                        src={activity.imageUrl || activity.cityId?.imageUrl || ''} 
                         alt={activity.name} 
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                        fill
+                        unoptimized
+                        className="object-cover hover:scale-105 transition-transform duration-300" 
                       />
+                    </div>
+                  ) : (
+                    <div className="h-48 bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center">
+                      <span className="text-6xl text-white">🎯</span>
                     </div>
                   )}
                   <div className="p-6">

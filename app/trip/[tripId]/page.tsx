@@ -1,15 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Calendar,
   DollarSign,
-  Globe,
   Save,
-  ArrowLeft,
   Users,
   Sparkles,
   Plane,
@@ -17,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../../store/authStore";
 import AIBudgetSuggestion from "../../components/AIBudgetSuggestion";
+import Navbar from "../../components/Navbar";
 
 interface TripData {
   destination: string;
@@ -32,6 +31,7 @@ interface TripData {
 export default function TripPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const tripId = params.tripId as string;
   const { user, checkAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -95,8 +95,21 @@ export default function TripPage() {
     if (tripId !== "new") {
       fetchTripData();
       setSavedTripId(tripId);
+    } else {
+      // Pre-fill destination from URL parameter
+      const destination = searchParams.get('destination');
+      if (destination) {
+        const dest = decodeURIComponent(destination);
+        setTripData(prev => ({
+          ...prev,
+          destination: dest,
+          isInternational: ![
+            "india", "mumbai", "delhi", "chandigarh", "noida", "gurgaon", "bangalore", "chennai", "kolkata", "hyderabad", "pune", "ahmedabad", "jaipur", "goa", "kerala", "rajasthan", "kashmir", "himachal", "uttarakhand", "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh", "gujarat", "haryana", "jharkhand", "karnataka", "madhya pradesh", "maharashtra", "manipur", "meghalaya", "mizoram", "nagaland", "odisha", "punjab", "sikkim", "tamil nadu", "telangana", "tripura", "uttar pradesh", "west bengal", "andaman", "dadra", "daman", "lakshadweep", "puducherry", "agra", "allahabad", "amritsar", "aurangabad", "bhopal", "bhubaneswar", "coimbatore", "dehradun", "faridabad", "ghaziabad", "guwahati", "hubli", "indore", "jabalpur", "jammu", "jodhpur", "kanpur", "kochi", "lucknow", "ludhiana", "madurai", "mangalore", "meerut", "mysore", "nagpur", "nashik", "patna", "raipur", "rajkot", "ranchi", "salem", "shimla", "srinagar", "surat", "thiruvananthapuram", "tiruchirappalli", "udaipur", "vadodara", "varanasi", "vijayawada", "visakhapatnam", "rishikesh", "haridwar", "manali", "dharamshala", "ooty", "kodaikanal", "munnar", "alleppey", "varkala", "hampi", "pushkar", "mount abu", "darjeeling", "gangtok", "shillong", "imphal", "kohima", "aizawl"
+          ].some(place => dest.toLowerCase().includes(place))
+        }));
+      }
     }
-  }, [checkAuth, tripId, fetchTripData]);
+  }, [checkAuth, tripId, fetchTripData, searchParams]);
 
   const validateDates = () => {
     if (!tripData.startDate || !tripData.endDate) return false;
@@ -168,6 +181,44 @@ export default function TripPage() {
     }
   };
 
+  const handleUpdateTrip = async () => {
+    if (
+      !tripData.destination ||
+      !tripData.startDate ||
+      !tripData.endDate ||
+      !tripData.budget ||
+      !validateDates()
+    ) {
+      alert("Please fill in all required fields and check date limits");
+      return;
+    }
+
+    setLoading(true);
+    setIsAnimating(true);
+    try {
+      const response = await fetch(`/api/trips/${tripId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(tripData),
+      });
+
+      if (response.ok) {
+        alert("Trip updated successfully!");
+        router.push(`/profile/${user?.id}`);
+      } else {
+        alert("Failed to update trip");
+      }
+    } catch (error) {
+      console.error("Error updating trip:", error);
+      alert("Failed to update trip");
+    } finally {
+      setLoading(false);
+      setIsAnimating(false);
+    }
+  };
+
   const nextStep = () => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
@@ -229,47 +280,8 @@ export default function TripPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50">
-      <header className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 sm:px-6 py-6 shadow-xl">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.back()}
-              className="p-3 text-white hover:bg-slate-700 rounded-xl transition-all duration-200 shadow-lg"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </motion.button>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center shadow-lg"
-            >
-              <Globe className="w-7 h-7 text-slate-900" />
-            </motion.div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">GlobeTrotter</h1>
-              <p className="text-sm text-teal-300 flex items-center gap-1">
-                <Sparkles className="w-4 h-4" />
-                AI-Powered Travel Planning
-              </p>
-            </div>
-          </div>
-          <div className="hidden md:flex items-center space-x-2 text-white/70">
-            <div className="flex items-center space-x-1">
-              {[1, 2, 3].map((step) => (
-                <div
-                  key={step}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                    step <= currentStep ? "bg-teal-400" : "bg-white/30"
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="text-sm ml-2">Step {currentStep} of 3</span>
-          </div>
-        </div>
-      </header>
+      <Navbar />
+
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <motion.div
@@ -288,12 +300,12 @@ export default function TripPage() {
               <Plane className="w-10 h-10 text-white" />
             </motion.div>
             <h2 className="text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent mb-3">
-              {tripId === "new" ? "Plan Your Dream Trip" : "Trip Details"}
+              {tripId === "new" ? "Plan Your Dream Trip" : "Edit Trip"}
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
               {tripId === "new"
                 ? "Let our AI create the perfect itinerary tailored just for you. Every journey begins with a single step."
-                : "Your personalized trip details and AI-powered recommendations"}
+                : "Update your trip details and preferences"}
             </p>
           </div>
 
@@ -334,28 +346,12 @@ export default function TripPage() {
                           ...prev,
                           destination: dest,
                           isInternational: ![
-                            "india",
-                            "mumbai",
-                            "delhi",
-                            "bangalore",
-                            "chennai",
-                            "kolkata",
-                            "hyderabad",
-                            "pune",
-                            "ahmedabad",
-                            "jaipur",
-                            "goa",
-                            "kerala",
-                            "rajasthan",
-                            "kashmir",
-                            "himachal",
-                            "uttarakhand",
+                            "india", "mumbai", "delhi", "chandigarh", "noida", "gurgaon", "bangalore", "chennai", "kolkata", "hyderabad", "pune", "ahmedabad", "jaipur", "goa", "kerala", "rajasthan", "kashmir", "himachal", "uttarakhand", "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh", "gujarat", "haryana", "jharkhand", "karnataka", "madhya pradesh", "maharashtra", "manipur", "meghalaya", "mizoram", "nagaland", "odisha", "punjab", "sikkim", "tamil nadu", "telangana", "tripura", "uttar pradesh", "west bengal", "andaman", "dadra", "daman", "lakshadweep", "puducherry", "agra", "allahabad", "amritsar", "aurangabad", "bhopal", "bhubaneswar", "coimbatore", "dehradun", "faridabad", "ghaziabad", "guwahati", "hubli", "indore", "jabalpur", "jammu", "jodhpur", "kanpur", "kochi", "lucknow", "ludhiana", "madurai", "mangalore", "meerut", "mysore", "nagpur", "nashik", "patna", "raipur", "rajkot", "ranchi", "salem", "shimla", "srinagar", "surat", "thiruvananthapuram", "tiruchirappalli", "udaipur", "vadodara", "varanasi", "vijayawada", "visakhapatnam", "rishikesh", "haridwar", "manali", "dharamshala", "ooty", "kodaikanal", "munnar", "alleppey", "varkala", "hampi", "pushkar", "mount abu", "darjeeling", "gangtok", "shillong", "imphal", "kohima", "aizawl"
                           ].some((place) => dest.toLowerCase().includes(place)),
                         }));
                       }}
                       placeholder="e.g., Paris, Tokyo, Goa, Mumbai..."
                       className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
-                      disabled={tripId !== "new"}
                       required
                     />
                     {tripData.destination && (
@@ -390,7 +386,6 @@ export default function TripPage() {
                         }))
                       }
                       className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
-                      disabled={tripId !== "new"}
                       required
                     >
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
@@ -420,7 +415,6 @@ export default function TripPage() {
                       }
                       min={new Date().toISOString().split("T")[0]}
                       className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
-                      disabled={tripId !== "new"}
                       required
                     />
                   </motion.div>
@@ -461,7 +455,6 @@ export default function TripPage() {
                           : undefined
                       }
                       className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
-                      disabled={tripId !== "new"}
                       required
                     />
                     {getDurationError() && (
@@ -486,7 +479,6 @@ export default function TripPage() {
                       }))
                     }
                     className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200 text-lg"
-                    disabled={tripId !== "new"}
                     required
                   >
                     <option value="">Select your budget range</option>
@@ -568,7 +560,6 @@ export default function TripPage() {
                               ? "border-teal-500 bg-gradient-to-br from-teal-50 to-blue-50 text-teal-700 shadow-lg"
                               : "border-gray-200 hover:border-gray-300 hover:shadow-md bg-white"
                           }`}
-                          disabled={tripId !== "new"}
                         >
                           <span className="text-2xl">{preference.icon}</span>
                           <span className="font-medium">{preference.name}</span>
@@ -594,7 +585,6 @@ export default function TripPage() {
                               ? "border-blue-500 bg-gradient-to-br from-blue-50 to-purple-50 text-blue-700 shadow-lg"
                               : "border-gray-200 hover:border-gray-300 hover:shadow-md bg-white"
                           }`}
-                          disabled={tripId !== "new"}
                         >
                           <span className="text-2xl">{activity.icon}</span>
                           <span className="font-medium">{activity.name}</span>
@@ -642,10 +632,10 @@ export default function TripPage() {
               >
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-semibold text-slate-800 mb-2">
-                    Review & Create
+                    Review & {tripId === "new" ? "Create" : "Update"}
                   </h3>
                   <p className="text-gray-600">
-                    Let&apos;s create your perfect itinerary!
+                    {tripId === "new" ? "Let's create your perfect itinerary!" : "Review your changes and update the trip"}
                   </p>
                 </div>
 
@@ -721,13 +711,13 @@ export default function TripPage() {
                     ← Previous
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: savedTripId ? 1 : 1.05 }}
-                    whileTap={{ scale: savedTripId ? 1 : 0.95 }}
-                    onClick={handleCreateTrip}
-                    disabled={loading || !validateDates() || savedTripId !== null}
+                    whileHover={{ scale: savedTripId && tripId === "new" ? 1 : 1.05 }}
+                    whileTap={{ scale: savedTripId && tripId === "new" ? 1 : 0.95 }}
+                    onClick={tripId === "new" ? handleCreateTrip : handleUpdateTrip}
+                    disabled={loading || !validateDates() || (tripId === "new" && savedTripId !== null)}
                     className="px-8 py-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {savedTripId ? (
+                    {savedTripId && tripId === "new" ? (
                       <>
                         <Save className="w-5 h-5" />
                         Trip Created ✓
@@ -743,12 +733,12 @@ export default function TripPage() {
                           }}
                           className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                         />
-                        Creating Trip...
+                        {tripId === "new" ? "Creating Trip..." : "Updating Trip..."}
                       </>
                     ) : (
                       <>
                         <Save className="w-5 h-5" />
-                        Create My Trip
+                        {tripId === "new" ? "Create My Trip" : "Update Trip"}
                       </>
                     )}
                   </motion.button>
@@ -758,7 +748,7 @@ export default function TripPage() {
           </AnimatePresence>
 
           {/* AI Suggestions */}
-          {savedTripId && (
+          {savedTripId && tripId === "new" && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -827,10 +817,10 @@ export default function TripPage() {
                 <Globe className="w-8 h-8 text-white" />
               </motion.div>
               <h3 className="text-xl font-semibold text-slate-800 mb-2">
-                Creating Your Dream Trip
+                {tripId === "new" ? "Creating Your Dream Trip" : "Updating Your Trip"}
               </h3>
               <p className="text-gray-600">
-                Our AI is crafting the perfect itinerary for you...
+                {tripId === "new" ? "Our AI is crafting the perfect itinerary for you..." : "Saving your changes..."}
               </p>
             </motion.div>
           </motion.div>
