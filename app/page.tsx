@@ -28,6 +28,7 @@ import { validateDestination, getDateValidation } from "../lib/validation";
 
 function Home() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [searchData, setSearchData] = useState({ destination: "", date: "" });
   const [email, setEmail] = useState("");
@@ -40,11 +41,16 @@ function Home() {
   const { user } = useAuthStore();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const interval = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % 3);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,6 +147,17 @@ function Home() {
       },
     },
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        <div className="animate-pulse">
+          <div className="h-16 bg-gray-200 mb-4"></div>
+          <div className="h-96 bg-gray-200"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
@@ -511,6 +528,7 @@ function Home() {
                   alt={destination.title}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${destination.gradient} opacity-80`}
@@ -838,6 +856,7 @@ function Home() {
                       alt={trip.name}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                     <div className="absolute bottom-4 left-4 text-white">
@@ -1017,6 +1036,4 @@ function Home() {
   );
 }
 
-export default dynamic(() => Promise.resolve(Home), {
-  ssr: false,
-});
+export default Home;

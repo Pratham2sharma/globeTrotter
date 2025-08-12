@@ -260,3 +260,38 @@
     background-position: -200% 0;
   }
 }
+/* PDF Export Styles */
+.pdf-content {
+  background: white;
+  color: #1e293b;
+}
+
+.pdf-content * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media print {
+  .pdf-content {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .pdf-content .bg-gradient-to-r {
+    background: #0d9488 !important;
+    color: white !important;
+  }
+  
+  .pdf-content .text-teal-600 {
+    color: #0d9488 !important;
+  }
+  
+  .pdf-content .text-blue-600 {
+    color: #2563eb !important;
+  }
+  
+  .pdf-content .border-teal-500 {
+    border-color: #14b8a6 !important;
+  }
+}

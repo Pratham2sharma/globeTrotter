@@ -12,6 +12,7 @@ import {
   Sparkles,
   Plane,
   Heart,
+  Globe,
 } from "lucide-react";
 import { useAuthStore } from "../../../store/authStore";
 import AIBudgetSuggestion from "../../components/AIBudgetSuggestion";
@@ -169,6 +170,10 @@ export default function TripPage() {
       if (response.ok) {
         const savedTrip = await response.json();
         setSavedTripId(savedTrip._id);
+        // Auto-redirect to profile after 5 seconds
+        setTimeout(() => {
+          router.push(`/profile/${user?.id}`);
+        }, 8000);
       } else {
         alert("Failed to create trip");
       }
@@ -776,18 +781,26 @@ export default function TripPage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1, duration: 0.6 }}
+                transition={{ delay: 2, duration: 0.6 }}
                 className="text-center mt-8"
               >
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push('/profile')}
-                  className="px-8 py-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 mx-auto"
-                >
-                  <Users className="w-5 h-5" />
-                  Go to Profile
-                </motion.button>
+                <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-6 border border-green-200 mb-6">
+                  <h4 className="text-lg font-semibold text-slate-800 mb-2">
+                    🎉 Your Trip is Ready!
+                  </h4>
+                  <p className="text-gray-600 mb-4">
+                    Visit your profile to export your itinerary as a beautifully formatted PDF
+                  </p>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => router.push(`/profile/${user?.id}`)}
+                    className="px-8 py-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 mx-auto"
+                  >
+                    <Users className="w-5 h-5" />
+                    View Profile & Export PDF
+                  </motion.button>
+                </div>
               </motion.div>
             </motion.div>
           )}
